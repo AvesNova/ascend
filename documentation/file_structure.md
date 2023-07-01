@@ -1,4 +1,4 @@
-MyGame
+AvesAscend
 │
 ├───src
 │   ├───main.jl                           # The entry point of your game
