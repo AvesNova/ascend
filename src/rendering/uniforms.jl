@@ -11,7 +11,7 @@ function set_uniform(prog::GLA.Program, name::Symbol, value::Vector{Float32})
     end
 end
 
-function struct_to_buffer_data(s::T) where T
+function struct_to_buffer_data(s::T)::Vector{Float32} where T
     elements = fieldnames(T)
     buffer_data = Float32[]
 
@@ -20,19 +20,13 @@ function struct_to_buffer_data(s::T) where T
 
         if val isa Number
             push!(buffer_data, Float32(val))
+
         elseif val isa AbstractVector
             append!(buffer_data, Float32.(val))
-            # If length less than 4, pad with zeros
-            for _ in 1:(4 - length(val))
-                push!(buffer_data, 0.0f0)
-            end
+
         elseif val isa AbstractMatrix
             # Flatten the matrix in column major order
             append!(buffer_data, Float32.(vec(val)))
-            # If fewer than 16 elements, pad with zeros
-            for _ in 1:(16 - length(val))
-                push!(buffer_data, 0.0f0)
-            end
         end
     end
 

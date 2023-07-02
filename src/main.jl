@@ -16,7 +16,7 @@ function main()
     # main game loop
     while !should_exit(rendering_manager)
         # process input
-        process_input(input_manager)
+        process_input(input_manager, rendering_manager.window)
 
         # update the game state
         # update_game_state()

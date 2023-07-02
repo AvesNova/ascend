@@ -1,3 +1,4 @@
+```
 AvesAscend
 │
 ├───src
@@ -42,3 +43,4 @@ AvesAscend
 │
 └───docs
     └───documentation.md                  # Documentation of your game
+```

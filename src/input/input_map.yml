@@ -1,0 +1,28 @@
+keyboard:
+  KEY_W: forward
+  KEY_S: backward
+  KEY_A: left
+  KEY_D: right
+  KEY_Q: turn_left
+  KEY_E: turn_right
+
+mouse:
+  button:
+
+joystick:
+  "CH PRO THROTTLE USB":
+    button:
+      1: forward
+    axis:
+      3: throttle_axis
+
+  "Saitek Pro Flight Rudder Pedals":
+    button:
+    axis:
+      3: yaw_axis
+
+  " VKB-Sim Gladiator NXT R  ":
+    button:
+    axis:
+      1: roll_axis
+      2: pitch_axis

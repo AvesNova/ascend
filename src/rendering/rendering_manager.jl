@@ -65,7 +65,7 @@ function render(rendering_manager::RenderingManager)
 end
 
 function should_exit(rendering_manager::RenderingManager)
-    return GLFW.GetKey(rendering_manager.window, GLFW.KEY_ESCAPE) == GLFW.PRESS
+    return GLFW.WindowShouldClose(rendering_manager.window) || GLFW.GetKey(rendering_manager.window, GLFW.KEY_ESCAPE) == GLFW.PRESS
 end
 
 function cleanup(rendering_manager::RenderingManager)
