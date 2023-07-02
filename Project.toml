@@ -1,4 +1,5 @@
 [deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 GLAbstraction = "ca6e7d0a-b0c9-59ca-8aba-aebf11497e1c"
 GLFW = "f7f18e0c-5ee9-5ccd-a5bf-e8befd85ed98"
 GeometryTypes = "4d00f742-c7ba-57c2-abde-4428a4b178cb"
