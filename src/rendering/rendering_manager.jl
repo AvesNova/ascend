@@ -46,16 +46,21 @@ function RenderingManager()
     return RenderingManager(window, gla_program, vertex_array_obj)
 end
 
-function render(rendering_manager::RenderingManager)
+function render(rendering_manager::RenderingManager, game_state::GameState)
     glClear(GL_COLOR_BUFFER_BIT)
     GLA.bind(rendering_manager.gla_program)
 
     # put uniforms and buffers here
-    tex::Vector{Float32} = [1.0, 0.0, 0.0, 0.0]
+    tex::Vector{Float32} = [1.0, 0.0, (cos(time()) + 1) / 2, 1.0]
     u = GLA.uniform_location(rendering_manager.gla_program, :tex)
     if u != GLA.INVALID_UNIFORM
         glUniform4f(u, tex...)
     end
+
+    test_buffer::Vector{Float32} = []
+    # test_buffer[2] = (sin(time()) + 1) / 2
+    # test_buffer[15] = (sin(time()) + 1) / 2
+    set_shader_storage_block(rendering_manager.gla_program, "ObjectBuffer", test_buffer)
 
     GLA.bind(rendering_manager.vertex_array_obj)
     GLA.draw(rendering_manager.vertex_array_obj)

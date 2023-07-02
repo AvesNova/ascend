@@ -323,7 +323,7 @@ processes joystick axes, and prints the current state of actions and axes.
 - The `actions` and `axes` fields of the `input_manager` are updated.
 - The current state of actions and axes is printed to the console.
 """
-function process_input(input_manager::InputManager, window::GLFW.Window)
+function process_input!(input_manager::InputManager, window::GLFW.Window)
     GLFW.PollEvents()
     input_manager.actions = get_actions(input_manager.input_map, window)
     process_axes!(input_manager.axes, input_manager.input_map)
