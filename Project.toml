@@ -1,8 +1,12 @@
 [deps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 CliffordAlgebras = "ca841f6f-225c-4bbd-a467-7a3512dfa6f6"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DocumenterTools = "35a29f4d-8980-5a13-9543-d66fff28ecb8"
 GLAbstraction = "ca6e7d0a-b0c9-59ca-8aba-aebf11497e1c"
 GLFW = "f7f18e0c-5ee9-5ccd-a5bf-e8befd85ed98"
 GeometryTypes = "4d00f742-c7ba-57c2-abde-4428a4b178cb"
 ModernGL = "66fc600b-dfda-50eb-8b99-91cfa97b1301"
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"

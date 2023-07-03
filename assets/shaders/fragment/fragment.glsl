@@ -66,8 +66,7 @@ vec4 kln_apply(in kln_motor m, in vec4 p)
 
 layout (std140) uniform Camera 
 {
-    vec4 c1;
-    vec4 c2;
+    kln_motor pose;
 };
 
 kln_motor camPose = kln_motor(vec4(-1, 0, 0, 0), vec4(0, 1, -3, 0));
