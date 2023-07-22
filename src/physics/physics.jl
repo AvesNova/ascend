@@ -1,7 +1,5 @@
 using OrdinaryDiffEq
 
-include("pga.jl")
-
 """
     inertia_map(twist::MultiVector, inertia::MultiVector) -> MultiVector
 
@@ -198,7 +196,7 @@ function RigidBodyMotionProblem(
     pose::Vector,
     inertia::MultiVector,
     Δt::Real;
-    forque::Function=((pose, t) -> LinePGA(0,0,0,0,0,0))
+    forque::Function=((twist, pose, t) -> LinePGA(0,0,0,0,0,0))
 )
     pose_motor::MultiVector = MotorPGA(pose)
     pose_motor /= norm(pose_motor)

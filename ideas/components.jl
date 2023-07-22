@@ -13,9 +13,10 @@ mutable struct AirPlane <: FlyingEntity
 end
 
 struct PhysicsComponent
+    twist::MultiVector
     pose::MultiVector
-    rate::MultiVector
     inertia::MultiVector
+    forque::Function
 end
 
 struct RenderComponent

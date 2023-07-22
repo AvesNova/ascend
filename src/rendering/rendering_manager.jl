@@ -20,7 +20,7 @@ end
 
 function get_default_vertices()
     # The positions of the vertices in our rectangle
-    vertex_positions = PointPGA{2,Float32}[(-1.0,  1.0),     # top-left
+    vertex_positions = Point{2,Float32}[(-1.0,  1.0),     # top-left
                                         ( 1.0,  1.0),     # top-right
                                         ( 1.0, -1.0),     # bottom-right
                                         (-1.0, -1.0)]     # bottom-left
