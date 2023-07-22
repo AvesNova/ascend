@@ -57,7 +57,7 @@ environment
 """
 aileron
 rudder
-horizontal stabalizer
+horizontal stabilizer
 flaps
 air brake
 denstiy

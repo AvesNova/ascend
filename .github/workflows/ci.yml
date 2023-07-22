@@ -10,25 +10,23 @@ on:
 
 jobs:
   test:
-    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
-        version:
-          - '1.9'  # Change this to your required Julia version
-        os:
-        #   - ubuntu-latest
-        #   - macOS-latest
-          - windows-latest
-        arch:
-          - x64
+        julia-version: ['release']
+        julia-arch: [x64]
+        os: [windows-latest, ubuntu-latest]
+
 
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
         with:
-          version: ${{ matrix.version }}
-          arch: ${{ matrix.arch }}
+          version: ${{ matrix.julia-version }}
+          arch: ${{ matrix.julia-arch }}
       - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-test@v1
+      - uses: julia-actions/julia-runtest@v1
+        # with:
+        #   annotate: true
+
+          

@@ -1,5 +1,3 @@
-using Test
-
 include("../src/physics/physics.jl")
 
 
