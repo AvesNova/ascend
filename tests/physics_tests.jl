@@ -2,6 +2,7 @@ using Test
 
 include("../src/physics/physics.jl")
 
+
 @testset "Physics Tests" begin
     @testset "Rigid Body Motion Tests" begin
         Δt = 100.0
@@ -26,26 +27,35 @@ include("../src/physics/physics.jl")
         end
 
         @testset "Zero Dynamics Test" begin
-            twist_0 =[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-            pose_0 = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            twist_0 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            pose_0 = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 3.0, -2.0]
             twist_t, pose_t = rbm_physics_step(twist_0, pose_0, inertia_0, Δt)
             @test twist_t == twist_0
             @test pose_t == pose_0
         end
 
-        @testset "Inertia Invariance Test" begin
-            twist_0 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-            pose_0 = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 3.0, -2.0]
-            twist_t, _ = rbm_physics_step(twist_0, pose_0, inertia_0, Δt)
+        @testset "Zero Dynamics MulitVector Test" begin
+            twist_0 = LinePGA(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+            pose_0 = MotorPGA(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 3.0, -2.0)
+            twist_t, pose_t = rbm_physics_step(twist_0, pose_0, inertia_0, Δt)
             @test twist_t == twist_0
+            @test pose_t == pose_0
         end
 
         @testset "Normalization Test" begin
             twist_0 = [0.0, 0.0, 0.0, 0.1, 0.001, 0.0]
-            pose_0 = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 3.0, -2.0]
+            pose_0 = [1.0, 2.0, 2.0, 4.0, 5.0, 6.0, 7.0, 8.0]
             _, pose_t = rbm_physics_step(twist_0, pose_0, inertia_0, Δt)
             pose_motor::MultiVector = MotorPGA(pose_t)
             @test isapprox(norm(pose_motor), 1.0, atol=1e-4)
+        end
+
+        @testset "Normalization MulitVector Test" begin
+            twist_0 = LinePGA(0.0, 0.0, 0.0, 0.1, 0.001, 0.0)
+            pose_0 = MotorPGA(1.0, 2.0, 2.0, 4.0, 5.0, 6.0, 7.0, 8.0)
+            _, pose_t = rbm_physics_step(twist_0, pose_0, inertia_0, Δt)
+            
+            @test isapprox(norm(pose_t), 1.0, atol=1e-4)
         end
 
         @testset "Symmetry Test" begin
@@ -61,6 +71,19 @@ include("../src/physics/physics.jl")
             @test isapprox(pose_full, pose_single, atol=1e-4)
         end
 
+        @testset "Symmetry MulitVector Test" begin
+            twist_0 = LinePGA(0.0, 0.0, 0.0, 0.1, 0.001, 0.0)
+            pose_0 = MotorPGA(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 3.0, -2.0)
+
+            twist_half, pose_half = rbm_physics_step(twist_0, pose_0, inertia_0, Δt/2)
+            twist_full, pose_full = rbm_physics_step(twist_half, pose_half, inertia_0, Δt/2)
+            
+            twist_single, pose_single = rbm_physics_step(twist_0, pose_0, inertia_0, Δt)
+
+            @test norm(vector(twist_full - twist_single)) < 1e-4
+            @test norm(vector(pose_full - pose_single)) < 1e-4
+        end
+
         @testset "Reversability Test" begin
             twist_0 = [0.0, 0.0, 0.0, 0.1, 0.001, 0.0]
             pose_0 = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 3.0, -2.0]
@@ -70,6 +93,17 @@ include("../src/physics/physics.jl")
             
             norm(twist_0 - twist_reversed) < 1e-4
             norm(pose_0 - pose_reversed) < 1e-4
+        end
+
+        @testset "Reversability MulitVector Test" begin
+            twist_0 = LinePGA(0.0, 0.0, 0.0, 0.1, 0.001, 0.0)
+            pose_0 = MotorPGA(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 3.0, -2.0)
+            
+            twist_single, pose_single = rbm_physics_step(twist_0, pose_0, inertia_0, Δt)
+            twist_reversed, pose_reversed = rbm_physics_step(twist_single, pose_single, inertia_0, -Δt)
+            
+            norm(vector(twist_0 - twist_reversed)) < 1e-4
+            norm(vector(pose_0 - pose_reversed)) < 1e-4
         end
     end
 
