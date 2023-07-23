@@ -1,4 +1,12 @@
 using OrdinaryDiffEq
+using StaticArrays
+
+mutable struct PhysicsComponent
+    twist::MVector{6,Float64}
+    pose::MVector{8,Float64}
+    inertia::MultiVector
+    forque::Function
+end
 
 """
     inertia_map(twist::MultiVector, inertia::MultiVector) -> MultiVector
@@ -80,11 +88,15 @@ end
 
 Updates the `Δpose` vector based on the given `twist` and `pose`.
 """
-function Δpose!(Δpose::Vector, twist::Vector, pose::Vector, p, t::Real)
+function Δpose!(
+    Δpose::Union{Vector{T}, MVector{8,T}}, 
+    twist::Union{Vector{T}, MVector{6,T}}, 
+    pose::Union{Vector{T}, MVector{8,T}}, p, t::Real
+) where {T <: Real}
     twist_line::MultiVector = LinePGA(twist)
     pose_motor::MultiVector = MotorPGA(pose)
     Δpose_line::MultiVector = -0.5 * pose_motor * twist_line
-    Δpose .= coefficients(Δpose_line, MOTOR_PGA_INDICES_VECTOR)
+    Δpose .= coefficients(Δpose_line, MOTOR_PGA_INDICES_MVECTOR)
 end
 
 """
@@ -128,7 +140,12 @@ end
 
 Acceleration = I⁻¹[Forque + Rate ×₋ I[Rate]]
 """
-function Δtwist!(Δtwist::Vector, twist::Vector, pose::Vector, p, t::Real)
+function Δtwist!(
+    Δtwist::Union{Vector{T}, MVector{6,T}}, 
+    twist::Union{Vector{T}, MVector{6,T}}, 
+    pose::Union{Vector{T}, MVector{8,T}}, 
+    p, t::Real
+) where {T <: Real}
     inertia::MultiVector = p.inertia
     twist_line::MultiVector = LinePGA(twist)
 
@@ -136,7 +153,7 @@ function Δtwist!(Δtwist::Vector, twist::Vector, pose::Vector, p, t::Real)
     momentum::MultiVector = twist_line ×₋ Itwist + p.forque(twist, pose, t)
     Δtwist_line::MultiVector = inv_inertia_map(momentum, inertia)
 
-    Δtwist .= coefficients(Δtwist_line, LINE_PGA_INDICES_VECTOR)
+    Δtwist .= coefficients(Δtwist_line, LINE_PGA_INDICES_MVECTOR)
 end
 
 """
@@ -200,7 +217,7 @@ function RigidBodyMotionProblem(
 )
     pose_motor::MultiVector = MotorPGA(pose)
     pose_motor /= norm(pose_motor)
-    pose = coefficients(pose_motor, MOTOR_PGA_INDICES_VECTOR)
+    pose = coefficients(pose_motor, MOTOR_PGA_INDICES_MVECTOR)
 
     p = (inertia=inertia, forque=forque)
     return DynamicalODEProblem(Δtwist!, Δpose!, twist, pose, (0.0, Δt), p)
@@ -222,17 +239,17 @@ Perform one step of the rigid body motion simulation without modifying the input
 - A tuple containing the resulting twist and pose vectors after the simulation step.
 """
 function rbm_physics_step(
-    twist::Vector,
-    pose::Vector,
+    twist,
+    pose,
     inertia::MultiVector,
-    Δt::Real;
+    Δt::Float64;
     forque::Function=((twist, pose, t) -> LinePGA(0,0,0,0,0,0)),
     alg=Tsit5,
     kwargs...,
 )::Tuple{Vector{Float64}, Vector{Float64}}
     pose_motor::MultiVector = MotorPGA(pose)
     pose_motor /= norm(pose_motor)
-    pose = coefficients(pose_motor, MOTOR_PGA_INDICES_VECTOR)
+    pose = coefficients(pose_motor, MOTOR_PGA_INDICES_MVECTOR)
 
     p = (inertia=inertia, forque=forque)
     rbm_prob = DynamicalODEProblem(Δtwist!, Δpose!, twist, pose, (0.0, Δt), p; kwargs...)
@@ -260,13 +277,13 @@ function rbm_physics_step(
     twist::MultiVector,
     pose::MultiVector,
     inertia::MultiVector,
-    Δt::Real;
+    Δt::Float64;
     forque::Function=((twist, pose, t) -> LinePGA(0,0,0,0,0,0))
 )::Tuple{MultiVector, MultiVector}
     pose /= norm(pose)
 
-    twist_vector = coefficients(twist, LINE_PGA_INDICES_VECTOR)
-    pose_vector = coefficients(pose, MOTOR_PGA_INDICES_VECTOR)
+    twist_vector = coefficients(twist, LINE_PGA_INDICES_MVECTOR)
+    pose_vector = coefficients(pose, MOTOR_PGA_INDICES_MVECTOR)
 
     p = (inertia=inertia, forque=forque)
     rbm_prob = DynamicalODEProblem(Δtwist!, Δpose!, twist_vector, pose_vector, (0.0, Δt), p)
@@ -277,3 +294,44 @@ function rbm_physics_step(
 
     return twist, pose
 end
+
+"""
+    step(phx_component::PhysicsComponent, ) -> Tuple{MultiVector, MultiVector}
+
+Perform one step of the rigid body motion simulation.
+"""
+function rbm_physics_step!(
+    phx_component::PhysicsComponent,
+    Δt::Float64;
+)
+    (;twist, pose, inertia, forque) = phx_component
+
+    pose_motor = MotorPGA(pose)
+    pose_motor /= norm(pose_line)
+    pose = coefficients(pose_motor, MOTOR_PGA_INDICES_MVECTOR)
+
+    p = (inertia=inertia, forque=forque)
+    rbm_prob = DynamicalODEProblem(Δtwist!, Δpose!, twist_vector, pose_vector, (0.0, Δt), p)
+    sol = solve(rbm_prob, Tsit5())
+
+    twist = sol[end].x[1]
+    pose = sol[end].x[2]
+
+    phx_component.twist = twist
+    phx_component.pose = pose
+end
+
+
+Δt = 100.0
+inertia_0::MultiVector = LinePGA(2, 1, 3, 1, 1, 1)
+
+twist_0::MVector{6, Float64} = [0.0, 0.0, 0.0, 0.1, 0.001, 0.0]
+pose_0::MVector{8, Float64} = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 3.0, -2.0]
+
+twist_half, pose_half = rbm_physics_step(twist_0, pose_0, inertia_0, Δt/2)
+twist_full, pose_full = rbm_physics_step(twist_half, pose_half, inertia_0, Δt/2)
+
+twist_single, pose_single = rbm_physics_step(twist_0, pose_0, inertia_0, Δt)
+
+norm(twist_full - twist_single)
+norm(pose_full - pose_single)

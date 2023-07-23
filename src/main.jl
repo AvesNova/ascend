@@ -9,7 +9,7 @@ function main()
 
     while !should_exit(rendering_manager)
         process_input!(input_manager, rendering_manager.window)
-        # update_game_state!(game_state, input_manager)
+        update_game_state!(game_state, input_manager)
         render(rendering_manager, game_state)
     end
     

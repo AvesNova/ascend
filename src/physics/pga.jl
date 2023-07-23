@@ -1,5 +1,7 @@
 using CliffordAlgebras
 import CliffordAlgebras: MultiVector, coefficients
+using StaticArrays
+
 # import Base: .*, ./
 
 const PGA = CliffordAlgebra(:PGA3D)
@@ -40,6 +42,7 @@ end
 
 const MOTOR_PGA_INDICES_TUPLE = (1, 6, 7, 8, 9, 10, 11, 16)
 const MOTOR_PGA_INDICES_VECTOR = [1, 6, 7, 8, 9, 10, 11, 16]
+const MOTOR_PGA_INDICES_MVECTOR::MVector{8, Int} = [1, 6, 7, 8, 9, 10, 11, 16]
 
 function MotorPGA(motor::NTuple{N,T})::MultiVector where {N,T<:Real}
     @assert N == 8
@@ -50,7 +53,7 @@ function MotorPGA(motor::T...)::MultiVector where T<:Real
     return MotorPGA(ntuple(i -> motor[i], 8))
 end
 
-function MotorPGA(motor::Vector{T})::MultiVector where T<:Real
+function MotorPGA(motor::Union{Vector{T}, MVector{8,T}})::MultiVector where T<:Real
     return MotorPGA(NTuple{8, T}(motor))
 end
 
@@ -60,6 +63,7 @@ end
 
 const LINE_PGA_INDICES_TUPLE = (6, 7, 8, 9, 10, 11)
 const LINE_PGA_INDICES_VECTOR = [6, 7, 8, 9, 10, 11]
+const LINE_PGA_INDICES_MVECTOR::MVector{6, Int} = [6, 7, 8, 9, 10, 11]
 
 function LinePGA(line::NTuple{N,T})::MultiVector where {N,T<:Real}
     @assert N == 6
@@ -70,7 +74,7 @@ function LinePGA(line::T...)::MultiVector where T<:Real
     return LinePGA(ntuple(i -> line[i], length(line)))
 end
 
-function LinePGA(line::Vector{T})::MultiVector where T<:Real
+function LinePGA(line::Union{Vector{T}, MVector{6,T}})::MultiVector where T<:Real
     return LinePGA(NTuple{6, T}(line))
 end
 
@@ -157,7 +161,11 @@ end
 
 Returns the multivector coefficients for the given basis vectors. Returns 0 if index is out of bounds.
 """
-function coefficients(mv::MultiVector{CA,T}, idxs::Union{NTuple, Vector})::Union{NTuple, Vector} where {CA,T}
+function coefficients(
+    mv::MultiVector{CA,T}, 
+    idxs::Union{NTuple, Vector, MVector}
+)::Union{NTuple, Vector, MVector} where {CA,T}
+
     # Precompute base indices for efficiency
     bases = baseindices(mv)
     coeffs = getfield(mv, :c)

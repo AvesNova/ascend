@@ -3,13 +3,6 @@ include("../physics/physics.jl")
 
 abstract type Entity end
 
-mutable struct PhysicsComponent
-    twist::MultiVector
-    pose::MultiVector
-    inertia::MultiVector
-    forque::Function
-end
-
 mutable struct Player <: Entity
     physics::PhysicsComponent
 end
@@ -40,8 +33,13 @@ function Cube()
     )
 end
 
-mutable struct Environment
-    Δt <: Real
+mutable struct Environment{T <: Real}
+    t_last::T
+    Δt_target::T
+end
+
+function Environment(Δt_target::T) where {T <: Real}
+    return Environment(time(), Δt_target)
 end
 
 mutable struct GameState
@@ -59,4 +57,14 @@ function GameState()
             :cube => cube,
         )
     )
+end
+
+function update_game_state!(game_state::GameState, input_manager::InputManager)
+    t_current = time()
+    Δt = t_current - game_state.environment.t_last
+    game_state.environment.t_last = t_current
+
+    for entity in values(game_state.entities)
+        rbm_physics_step!(entity.physics, Δt)
+    end
 end
