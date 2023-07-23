@@ -6,15 +6,15 @@ using StaticArrays
 
 const PGA = CliffordAlgebra(:PGA3D)
 
-function MultiVector(
-    CA::Type{<:CliffordAlgebra},
-    BI::NTuple{K,Integer},
-    c::NTuple{K,T},
-) where {K,T<:Real}
-    @assert length(BI) > 0 
-    #@assert issorted(BI) && allunique(BI)
-    MultiVector{CA,T,convert(NTuple{K,Int}, BI),K}(c)
-end
+# function MultiVector(
+#     CA::Type{<:CliffordAlgebra},
+#     BI::NTuple{K,Integer},
+#     c::NTuple{K,T},
+# ) where {K,T<:Real}
+#     @assert length(BI) > 0 
+#     #@assert issorted(BI) && allunique(BI)
+#     MultiVector{CA,T,convert(NTuple{K,Int}, BI),K}(c)
+# end
 
 MultiVector(
     ca::CliffordAlgebra, 

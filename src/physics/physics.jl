@@ -307,11 +307,11 @@ function rbm_physics_step!(
     (;twist, pose, inertia, forque) = phx_component
 
     pose_motor = MotorPGA(pose)
-    pose_motor /= norm(pose_line)
+    pose_motor /= norm(pose_motor)
     pose = coefficients(pose_motor, MOTOR_PGA_INDICES_MVECTOR)
 
     p = (inertia=inertia, forque=forque)
-    rbm_prob = DynamicalODEProblem(Δtwist!, Δpose!, twist_vector, pose_vector, (0.0, Δt), p)
+    rbm_prob = DynamicalODEProblem(Δtwist!, Δpose!, twist, pose, (0.0, Δt), p)
     sol = solve(rbm_prob, Tsit5())
 
     twist = sol[end].x[1]
@@ -320,18 +320,3 @@ function rbm_physics_step!(
     phx_component.twist = twist
     phx_component.pose = pose
 end
-
-
-Δt = 100.0
-inertia_0::MultiVector = LinePGA(2, 1, 3, 1, 1, 1)
-
-twist_0::MVector{6, Float64} = [0.0, 0.0, 0.0, 0.1, 0.001, 0.0]
-pose_0::MVector{8, Float64} = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 3.0, -2.0]
-
-twist_half, pose_half = rbm_physics_step(twist_0, pose_0, inertia_0, Δt/2)
-twist_full, pose_full = rbm_physics_step(twist_half, pose_half, inertia_0, Δt/2)
-
-twist_single, pose_single = rbm_physics_step(twist_0, pose_0, inertia_0, Δt)
-
-norm(twist_full - twist_single)
-norm(pose_full - pose_single)

@@ -8,8 +8,8 @@ mutable struct Player <: Entity
 end
 
 function Player()
-    twist::MultiVector = LinePGA(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-    pose::MultiVector = MotorPGA(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, -3.0, 0.0)
+    twist::MVector{6,Float64} = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    pose::MVector{8,Float64} = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, -3.0, 0.0]
     inertia::MultiVector = LinePGA(1, 1, 1, 1, 1, 1)
     forque(twist, pose, t) = LinePGA(0,0,0,0,0,0)
 
@@ -23,8 +23,8 @@ mutable struct Cube <: Entity
 end
 
 function Cube()
-    twist::MultiVector = LinePGA(0.0, 0.0, 0.0, 0.1, 0.001, 0.0)
-    pose::MultiVector = MotorPGA(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 3.0, -2.0)
+    twist::MVector{6,Float64} = [0.0, 0.0, 0.0, 0.1, 0.001, 0.0]
+    pose::MVector{8,Float64} = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 3.0, -2.0]
     inertia::MultiVector = LinePGA(1, 1, 1, 2, 1, 3)
     forque(twist, pose, t) = LinePGA(0,0,0,0,0,0)
 
