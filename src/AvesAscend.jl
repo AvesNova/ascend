@@ -5,9 +5,11 @@ include("game/game_state.jl")
 include("rendering/rendering_manager.jl")
 
 function main()
+    println("Initializing Game")
     input_manager = InputManager()
     rendering_manager = RenderingManager()
     game_state = GameState()
+    println("Finished Initializing Game ")
 
     while !should_exit(rendering_manager)
         process_input!(input_manager, rendering_manager.window)
