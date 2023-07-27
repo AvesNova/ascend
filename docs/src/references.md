@@ -6,6 +6,7 @@ https://www.youtube.com/@PezzzasWork
 https://bivector.net/PGADYN.html
 http://marctenbosch.com/ndphysics/NDrigidbody.pdf
 https://www.youtube.com/@sudgylacmoe
+https://github.com/jeremyong/klein
 
 ##Fractals | Ray Marching
 https://www.youtube.com/@CodeParade

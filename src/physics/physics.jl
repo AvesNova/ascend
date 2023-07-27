@@ -1,14 +1,8 @@
 using OrdinaryDiffEq
 using CliffordAlgebras
 using StaticArrays
-import("pga.jl")
+include("pga.jl")
 
-mutable struct PhysicsComponent
-    twist::MVector{6,Float64}
-    pose::MVector{8,Float64}
-    inertia::MultiVector
-    forque::Function
-end
 
 """
     inertia_map(twist::MultiVector, inertia::MultiVector) -> MultiVector
@@ -65,10 +59,12 @@ end
 Updates the `Δpose` vector based on the given `twist` and `pose`.
 """
 function Δpose!(
-    Δpose::V{T}, 
-    twist::V{T}, 
-    pose::V{T}, p, t::Real
-)::Nothing where {T <: Real, V <: AbstractVector}
+    Δpose::MVector{8,T},
+    twist::MVector{6,T},
+    pose::MVector{8,T}, 
+    p, 
+    t::T
+)::Nothing where {T<:Real}
     twist_line::MultiVector = pga_line(twist)
     pose_motor::MultiVector = pga_motor(pose)
 
@@ -80,19 +76,20 @@ end
 """
     Δtwist!(Δtwist::Vector, twist::Vector, pose::Vector, p, t::Real)::MultiVector
 
-Acceleration = I⁻¹[Forque + Rate ×₋ I[Rate]]
+Acceleration = I⁻¹[Twist ×₋ I[Twist] + Forque]
 """
 function Δtwist!(
-    Δtwist::V{T}, 
-    twist::V{T}, 
-    pose::V{T}, 
-    p, t::Real
-)::Nothing where {T <: Real, V <: AbstractVector}
+    Δtwist::MVector{6,T},
+    twist::MVector{6,T},
+    pose::MVector{8,T},
+    p, 
+    t::Real
+)::Nothing where {T<:Real}
     inertia::MultiVector = p.inertia
     twist_line::MultiVector = pga_line(twist)
 
     Itwist::MultiVector = inertia_map(twist_line, inertia)
-    momentum::MultiVector = twist_line ×₋ Itwist + p.forque(twist, pose, t)
+    momentum::MultiVector = twist_line ×₋ Itwist + p.forque(twist, pose, p.button_controls, p.axis_controls, t)
     Δtwist_line::MultiVector = inv_inertia_map(momentum, inertia)
 
     Δtwist .= coefficients(Δtwist_line, PGA_LINE_INDICES_MVECTOR)
@@ -114,48 +111,65 @@ Perform one step of the rigid body motion simulation without modifying the input
 # Returns
 - A tuple containing the resulting twist and pose vectors after the simulation step.
 """
-function rbm_physics_step(
-    twist::V,
-    pose::V,
+function kinetic_step(
+    twist::MVector{6,T},
+    pose::MVector{8,T},
     inertia::MultiVector,
-    Δt::Float64;
+    Δt::T;
     forque::Function=((twist, pose, t) -> pga_line(0,0,0,0,0,0)),
-    alg=Tsit5,
-    kwargs...,
-)::Tuple{V, V} where {V <: AbstractVector}
+)::Tuple{MVector{6,T}, MVector{8,T}} where {T<:Real}
+
     pose_motor::MultiVector = pga_motor(pose)
     pose_motor /= norm(pose_motor)
     pose = coefficients(pose_motor, PGA_MOTOR_INDICES_MVECTOR)
 
     p = (inertia=inertia, forque=forque)
     rbm_prob = DynamicalODEProblem(Δtwist!, Δpose!, twist, pose, (0.0, Δt), p; kwargs...)
-    sol = solve(rbm_prob, alg())
+    sol = solve(rbm_prob, Tsit5())
 
     return sol[end].x[1], sol[end].x[2]
 end
 
 """
-    step(phx_component::PhysicsComponent, ) -> Tuple{MultiVector, MultiVector}
+    step(twist::MVector, pose::MVector, inertia::MultiVector, Δt::Real; forque::Function)
 
-Perform one step of the rigid body motion simulation.
+Perform one step of the rigid body motion simulation inplace.
+
+# Arguments
+- `twist::MVector`: Initial twist coefficients.
+- `pose::MVector`: Initial pose coefficients.
+- `inertia::MultiVector`: Moment of inertia as a PGA Line.
+- `forque::Function`: A function returning external forque (force + torque) as a PGA Line.
+- `Δt::Float64`: Time step for the simulation.
 """
-function rbm_physics_step!(
-    phx_component::PhysicsComponent,
-    Δt::Float64;
-)
-    (;twist, pose, inertia, forque) = phx_component
-
-    pose_motor = pga_motor(pose)
+function kinetic_step!(
+    twist::MVector{6,T},
+    pose::MVector{8,T},
+    inertia::MultiVector,
+    forque::Function,
+    axis_controls::AxisControls,
+    button_controls::ButtonControls,
+    Δt::Float64
+)::Nothing where {T<:Real}
+    pose_motor::MultiVector = pga_motor(pose)
     pose_motor /= norm(pose_motor)
     pose = coefficients(pose_motor, PGA_MOTOR_INDICES_MVECTOR)
 
-    p = (inertia=inertia, forque=forque)
-    rbm_prob = DynamicalODEProblem(Δtwist!, Δpose!, twist, pose, (0.0, Δt), p)
+    p = (inertia=inertia, forque=forque, button_controls=button_controls, axis_controls=axis_controls)
+    rbm_prob = DynamicalODEProblem(Δtwist!, Δpose!, twist, pose, (0.0, Δt), p;)
     sol = solve(rbm_prob, Tsit5())
 
-    twist = sol[end].x[1]
-    pose = sol[end].x[2]
+    twist .= sol[end].x[1]
+    pose .= sol[end].x[2]
 
-    phx_component.twist = twist
-    phx_component.pose = pose
+    return nothing
+end
+
+function kinematic_step!(
+    twist::MVector{6,T},
+    pose::MVector{8,T},
+    Δt::Float64
+)::Nothing where {T<:Real}
+    # TODO
+    return nothing
 end

@@ -2,7 +2,7 @@
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "9766eaf1555bfbe21661bef569bf4c332a4bb250"
+project_hash = "e7fba7c16f3af90a8c4fbbdea83db7abd9f78d35"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "e58c18d2312749847a74f5be80bb0fa53da102bd"
@@ -161,8 +161,8 @@ version = "1.16.0"
 
 [[deps.CliffordAlgebras]]
 deps = ["Combinatorics", "LinearAlgebra", "PrettyTables", "SparseArrays", "StaticArrays"]
-git-tree-sha1 = "e979e1915899dae754206b808c2766093bd82203"
-repo-rev = "master"
+git-tree-sha1 = "53061a2b4e0980639b08f59ae03694c6db19e2b5"
+repo-rev = "klein"
 repo-url = "https://github.com/Vizia128/CliffordAlgebras.jl"
 uuid = "ca841f6f-225c-4bbd-a467-7a3512dfa6f6"
 version = "0.1.2"
@@ -1079,12 +1079,6 @@ version = "0.3.2"
 deps = ["Artifacts", "Libdl"]
 uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
 version = "10.42.0+0"
-
-[[deps.PGA]]
-deps = ["CliffordAlgebras", "StaticArrays"]
-path = "local_packages/PGA"
-uuid = "e843b2cb-54cf-4c05-884e-0107b0079c82"
-version = "0.1.0"
 
 [[deps.PackageExtensionCompat]]
 git-tree-sha1 = "32f3d52212a8d1c5d589a58851b1f04c97339110"

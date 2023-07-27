@@ -1,5 +1,9 @@
 using GLFW, YAML
 
+abstract type Controls end
+abstract type ControlButtons <: Controls end
+abstract type ControlAxes <: Controls end
+
 const MAX_JOYSTICKS = 15
 
 """
