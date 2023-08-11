@@ -3,7 +3,7 @@ using StaticArrays
 using CliffordAlgebras
 
 @component mutable struct Twist
-    pose::MVector{6, Float64}
+    twist::MVector{6, Float64}
 end
 
 @component mutable struct Pose
@@ -13,10 +13,6 @@ end
 @component mutable struct Kinetics
     inertia::MultiVector
     forque::Function
-end
-
-@component mutable struct Camera
-    pose::MVector{8, Float64}
 end
 
 @component mutable struct AeroControls

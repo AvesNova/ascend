@@ -9,7 +9,7 @@ struct PlayerController <: System end
 
 function Overseer.update(::PlayerController, l::AbstractLedger)
     for e in @entities_in(l, ButtonControls, AxisControls, PlayerInputManager)
-        get_player_input(e)
+        get_player_input(e.button_controls, e.axis_controls, e.player_input_manager)
     end
 end
 
@@ -22,11 +22,6 @@ function Overseer.update(::AiController, l::AbstractLedger)
     end
 end
 
-struct GetAxisInput <: System end
-
-function Overseer.update(::AxisInput, l::AbstractLedger)
-    for e in @entities_in(l, AxisInput)
-end
 
 struct KinematicMover <: System end
 
@@ -40,8 +35,8 @@ end
 struct KineticMover <: System end
 
 function Overseer.update(::KineticMover, l::AbstractLedger, Δt::Float64)
-    for e in @entities_in(l, Twist && Pose && Kinetics && Controls)
-        kinetic_step!(e.twist, e.pose, e.inertia, e.forque, e.controls, Δt)
+    for e in @entities_in(l, Twist && Pose && Kinetics && AxisControls && ButtonControls)
+        kinetic_step!(e.twist, e.pose, e.inertia, e.forque, e.axis_controls, e.button_controls, Δt)
     end
 end
 

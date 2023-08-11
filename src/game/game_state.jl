@@ -1,5 +1,4 @@
-include("../physics/pga.jl")
-# include("../physics/physics.jl")
+include("../physics/physics.jl")
 
 # abstract type Entity end
 
@@ -33,38 +32,36 @@ include("../physics/pga.jl")
 #     )
 # end
 
-# mutable struct Environment{T <: Real}
-#     t_last::T
-#     Δt_target::T
-# end
+mutable struct Environment{T <: Real}
+    t_last::T
+    Δt_target::T
+end
 
-# function Environment(Δt_target::T) where {T <: Real}
-#     return Environment(time(), Δt_target)
-# end
+function Environment(Δt_target::T) where {T <: Real}
+    return Environment(time(), Δt_target)
+end
 
-# mutable struct GameState
-#     environment::Environment
-#     entities::Dict{Symbol, Entity}
-# end
+mutable struct GameState
+    environment::Environment
+    # entities::Dict{Symbol, Entity}
+end
 
-# function GameState()
-#     player = Player()
-#     cube = Cube()
-#     return GameState(
-#         Environment(1/30),
-#         Dict(
-#             :player => player,
-#             :cube => cube,
-#         )
-#     )
-# end
+function GameState()
+    return GameState(
+        Environment(1/30),
+        # Dict(
+        #     :player => player,
+        #     :cube => cube,
+        # )
+    )
+end
 
-# function update_game_state!(game_state::GameState, input_manager::InputManager)
-#     t_current = time()
-#     Δt = t_current - game_state.environment.t_last
-#     game_state.environment.t_last = t_current
+function update_game_state!(game_state::GameState, input_manager::InputManager)
+    t_current = time()
+    Δt = t_current - game_state.environment.t_last
+    game_state.environment.t_last = t_current
 
-#     for entity in values(game_state.entities)
-#         rbm_physics_step!(entity.physics, Δt)
-#     end
-# end
+    for entity in values(game_state.entities)
+        rbm_physics_step!(entity.physics, Δt)
+    end
+end

@@ -2,22 +2,22 @@ module AvesAscend
 
 include("input/input_manager.jl")
 include("game/game_state.jl")
-# include("rendering/rendering_manager.jl")
+include("rendering/rendering_manager.jl")
 
 function main()
-    # println("Initializing Game")
-    # input_manager = InputManager()
-    # rendering_manager = RenderingManager()
+    println("Initializing Game")
+    input_manager = InputManager()
+    rendering_manager = RenderingManager()
     # game_state = GameState()
-    # println("Finished Initializing Game ")
+    println("Finished Initializing Game ")
 
-    # while !should_exit(rendering_manager)
-    #     process_input!(input_manager, rendering_manager.window)
-    #     update_game_state!(game_state, input_manager)
-    #     render(rendering_manager, game_state)
-    # end
+    while !should_exit(rendering_manager)
+        process_input!(input_manager, rendering_manager.window)
+        # update_game_state!(game_state, input_manager)
+        # render(rendering_manager, game_state)
+    end
     
-    # cleanup(rendering_manager)
+    cleanup(rendering_manager)
 end
 
 export main
