@@ -1,5 +1,7 @@
 using GLFW, YAML, Overseer, StaticArrays, DataStructures
 
+include("../rendering/rendering_manager.jl")
+
 const MAX_JOYSTICKS = 15
 
 @enum AxisEnums begin
@@ -25,7 +27,7 @@ const ActionCount = length(instances(ActionEnums))
 zero_action_vector() = MVector{ActionCount,Int}(zeros(ActionCount))
 
 """
-    get_button_map(input_map::Union{Dict, OrderedDict}) -> SMatrix
+    get_button_map(input_map::Union{Dict, OrderedDict})::SMatrix
 
 Create a nx2 SMatrix representing the button map based on the given input map.
 
@@ -34,14 +36,13 @@ Parameters:
 
 Returns:
 - SMatrix: The button map represented as an SMatrix.
-
 """
 function get_button_map(input_map::Union{Dict,OrderedDict})::SMatrix
     n = length(input_map)
     map = Matrix{Int}(undef, n, 2)
     
     # Determine the current module to use for getting properties
-    current_module = isdefined(Main, :AvesNova) ? AvesNova : Main
+    current_module = isdefined(Main, :AvesAscend) ? AvesAscend : Main
 
     for (i, (key, action)) in enumerate(input_map)
         # Determine the button value based on the key type
@@ -152,19 +153,29 @@ function process_axes!(axes::MVector, input_map::InputMap)
     end
 end
 
-mutable struct InputManager
+
+@component mutable struct PlayerInputMap
     input_map::InputMap
-    actions::MVector
+end
+
+@component mutable struct Actions
+    buttons::MVector
     axes::MVector
 end
 
-function InputManager()
-    return InputManager(InputMap(), zero_action_vector(), zero_axis_vector())
+struct PlayerActions <: System
+    window::GLFW.Window
 end
 
-function process_input!(input_manager::InputManager, window::GLFW.Window)
+function PlayerActions(rendering_manager::RenderingManager)
+    return PlayerActions(rendering_manager.window)
+end
+
+function Overseer.update(sys::PlayerActions, l::AbstractLedger)
     GLFW.PollEvents()
-    input_manager.actions = get_actions(input_manager.input_map, window)
-    process_axes!(input_manager.axes, input_manager.input_map)
-    print("\r$(input_manager.actions) \t $(input_manager.axes)")
+    for e in @entities_in(l, PlayerInputMap && Actions && PlayerActions)
+        e.buttons = get_actions(e.input_map, sys.window)
+        process_axes!(e.axes, e.input_map)
+        print("\r$(e.buttons) \t $(e.axes)")
+    end
 end

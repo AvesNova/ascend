@@ -27,3 +27,7 @@ end
     position::MVector{3, Float64}
     force::MVector{3, Float64}
 end
+
+@component mutable struct CameraControls
+    wasd_qe::MVector{6, Bool}
+end

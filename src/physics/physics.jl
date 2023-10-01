@@ -177,31 +177,31 @@ end
         Δt::Float64
     )::Nothing where {T<:Real}
 
-    Perform an in-place step of the rigid body motion simulation with forces and controls.
-    
-    # Arguments
-    - `twist::MVector{6,T}`: Initial twist coefficients, representing velocity of the rigid body.
-    - `pose::MVector{8,T}`: Initial pose coefficients, representing the position and orientation.
-    - `inertia::MultiVector`: Moment of inertia of the rigid body, represented as a PGA Line.
-    - `forque::Function`: A function that returns the external combined force and torque as a PGA Line.
-    - `axis_controls::Vector`: List of continuous control values, e.g., joystick positions or rotary controls.
-    - `button_controls::Vector`: List of binary control values, e.g., button presses or switches.
-    - `Δt::Float64`: Time step for the simulation.
-    
-    # Returns
-    - This function modifies the `twist` and `pose` arguments in-place and does not have a return value.
-    
-    # Note
-    The function utilizes a differential equations solver (`DynamicalODEProblem` and `solve`) to compute the 
-    updated values of twist and pose based on the provided inputs and time step.
+Perform an in-place step of the rigid body motion simulation with forces and controls.
+
+# Arguments
+- `twist::MVector{6,T}`: Initial twist coefficients, representing velocity of the rigid body.
+- `pose::MVector{8,T}`: Initial pose coefficients, representing the position and orientation.
+- `inertia::MultiVector`: Moment of inertia of the rigid body, represented as a PGA Line.
+- `forque::Function`: A function that returns the external combined force and torque as a PGA Line.
+- `axis_controls::Vector`: List of continuous control values, e.g., joystick positions or rotary controls.
+- `button_controls::Vector`: List of binary control values, e.g., button presses or switches.
+- `Δt::Float64`: Time step for the simulation.
+
+# Returns
+- This function modifies the `twist` and `pose` arguments in-place and does not have a return value.
+
+# Note
+The function utilizes a differential equations solver (`DynamicalODEProblem` and `solve`) to compute the 
+updated values of twist and pose based on the provided inputs and time step.
 """
 function kinetic_step!(
     twist::MVector{6,T},
     pose::MVector{8,T},
     inertia::MultiVector,
     forque::Function,
-    axis_controls::Vector,
-    button_controls::Vector,
+    axis_controls::MVector,
+    button_controls::MVector,
     Δt::Float64
 )::Nothing where {T<:Real}
     pose_motor::MultiVector = pga_motor(pose)
@@ -234,4 +234,31 @@ function kinematic_step!(
     pose .= sol[end].x[2]
 
     return nothing
+end
+
+@component mutable struct Pose
+    pose::MVector{8, Float64}
+end
+
+@component mutable struct Twist
+    twist::MVector{6, Float64}
+end
+
+@component mutable struct Kinetics
+    inertia::MultiVector
+    forque::Function
+end
+
+struct KinematicMover <: System end
+function Overseer.update(::KinematicMover, l::AbstractLedger, Δt::Float64)
+    for e in @entities_in(l, Twist && Pose)
+        kinematic_step!(e.twist, e.pose, Δt)
+    end
+end
+
+struct KineticMover <: System end
+function Overseer.update(::KineticMover, l::AbstractLedger, Δt::Float64)
+    for e in @entities_in(l, Twist && Pose && Kinetics && AxisControls && ButtonControls)
+        kinetic_step!(e.twist, e.pose, e.inertia, e.forque, e.axes, e.buttons, Δt)
+    end
 end
