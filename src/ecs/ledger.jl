@@ -7,6 +7,7 @@ function create_ledger()::Ledger
         RenderSystem(), 
         PlayerActions(),
         CameraMover(),
+        Pose2Buffer(),
     ]))
     return ledger
 end
@@ -16,6 +17,7 @@ function create_entities!(ledger::Ledger)
         ledger,
         Window(),
         RenderingManager(),
+        ObjectBuffer(),
     )
     
     # player_1 = Entity(
@@ -34,5 +36,6 @@ function create_entities!(ledger::Ledger)
     )
     ledger[Window][camera] = renderer
     ledger[RenderingManager][camera] = renderer
+    ledger[ObjectBuffer][camera] = renderer
 
 end

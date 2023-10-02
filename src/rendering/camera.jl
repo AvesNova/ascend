@@ -42,3 +42,12 @@ function Overseer.update(::CameraMover, l::AbstractLedger)
         # print("\r$(round.(e.pose; digits=4))")
     end
 end
+
+struct Pose2Buffer <: System end
+
+function Overseer.update(::Pose2Buffer, l::AbstractLedger)
+    for e in @entities_in(l, Pose && ObjectBuffer)
+        print("\r$(round.(e.pose; digits=4))  $(round.(e.object_buffer; digits=4))")
+        e.object_buffer[14:16] = e.pose[6:8]
+    end
+end

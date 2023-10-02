@@ -63,12 +63,10 @@ function ObjectBuffer()
     return ObjectBuffer(ones(Float32, 16))
 end
 
-struct RenderSystem <: System
-    # rendering_manager::RenderingManager
-end
+struct RenderSystem <: System end
 
 function Overseer.update(::RenderSystem, l::AbstractLedger)
-    for e in @entities_in(l, Window && RenderingManager && Camera && Pose)
+    for e in @entities_in(l, Window && RenderingManager && ObjectBuffer)
         glClear(GL_COLOR_BUFFER_BIT)
         GLA.bind(e.gla_program)
 
@@ -79,10 +77,9 @@ function Overseer.update(::RenderSystem, l::AbstractLedger)
         #     glUniform4f(u, tex...)
         # end
 
-        test_buffer = ones(Float32, 16)
-        test_buffer[14:16] = e.pose[6:8]
-        print("\r$(round.(e.pose; digits=4))")
-        set_shader_storage_block(e.gla_program, "ObjectBuffer", test_buffer)
+        # test_buffer = ones(Float32, 16)
+        # test_buffer[14:16] = e.pose[6:8]
+        set_shader_storage_block(e.gla_program, "ObjectBuffer", e.object_buffer)
 
         GLA.bind(e.vertex_array_obj)
         GLA.draw(e.vertex_array_obj)
