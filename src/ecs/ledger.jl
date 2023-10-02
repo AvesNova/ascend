@@ -33,5 +33,6 @@ function create_entities!(ledger::Ledger)
         Pose([1,0,0,0,0,0,0,0]),
     )
     ledger[Window][camera] = renderer
+    ledger[RenderingManager][camera] = renderer
 
 end

@@ -55,25 +55,33 @@ function RenderingManager()
     return RenderingManager(gla_program, vertex_array_obj)
 end
 
+@pooled_component struct ObjectBuffer
+    object_buffer
+end
+
+function ObjectBuffer()
+    return ObjectBuffer(ones(Float32, 16))
+end
+
 struct RenderSystem <: System
     # rendering_manager::RenderingManager
 end
 
 function Overseer.update(::RenderSystem, l::AbstractLedger)
-    for e in @entities_in(l, Window && RenderingManager)
+    for e in @entities_in(l, Window && RenderingManager && Camera && Pose)
         glClear(GL_COLOR_BUFFER_BIT)
         GLA.bind(e.gla_program)
 
         # put uniforms and buffers here
-        tex::Vector{Float32} = [1.0, 0.0, (cos(time()) + 1) / 2, 1.0]
-        u = GLA.uniform_location(e.gla_program, :tex)
-        if u != GLA.INVALID_UNIFORM
-            glUniform4f(u, tex...)
-        end
+        # tex::Vector{Float32} = [1.0, 0.0, (cos(time()) + 1) / 2, 1.0]
+        # u = GLA.uniform_location(e.gla_program, :tex)
+        # if u != GLA.INVALID_UNIFORM
+        #     glUniform4f(u, tex...)
+        # end
 
-        test_buffer::Vector{Float32} = []
-        # test_buffer[2] = (sin(time()) + 1) / 2
-        # test_buffer[15] = (sin(time()) + 1) / 2
+        test_buffer = ones(Float32, 16)
+        test_buffer[14:16] = e.pose[6:8]
+        print("\r$(round.(e.pose; digits=4))")
         set_shader_storage_block(e.gla_program, "ObjectBuffer", test_buffer)
 
         GLA.bind(e.vertex_array_obj)

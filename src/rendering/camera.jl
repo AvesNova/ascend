@@ -24,7 +24,7 @@ function Overseer.update(::CameraMover, l::AbstractLedger)
         d_z::Float64 = 0.0
         
         translator_norm = max(norm([d_x, d_y, d_z]), 1.0)
-        translator = pga_translator(10translator_norm, d_x, d_y, d_z)
+        translator = pga_translator(1000translator_norm, d_x, d_y, d_z)
 
         # Calculate rotation
         d_yz::Float64 = 0.0
@@ -39,6 +39,6 @@ function Overseer.update(::CameraMover, l::AbstractLedger)
         pga_pose /= norm(pga_pose)
 
         e.pose = coefficients(pga_pose, PGA_MOTOR_INDICES_MVECTOR)
-        print("\r$(round.(e.pose; digits=4))")
+        # print("\r$(round.(e.pose; digits=4))")
     end
 end
