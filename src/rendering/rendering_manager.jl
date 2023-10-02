@@ -31,54 +31,63 @@ function get_default_vertices()
     return vertex_positions, elements
 end
 
-struct RenderingManager
+@pooled_component struct Window
     window::GLFW.Window
+end
+
+function Window()
+    println("creating window")
+    window = create_window()
+    return Window(window)
+end
+
+@pooled_component struct RenderingManager
     gla_program::GLA.Program
     vertex_array_obj::GLA.VertexArray
 end
 
 function RenderingManager()
-    window = create_window()
+    println("creating rendering manager")
     gla_program = create_gla_program()
     vertex_positions, elements = get_default_vertices()
     buffers = GLA.generate_buffers(gla_program, GLA.GEOMETRY_DIVISOR; position = vertex_positions)
     vertex_array_obj = GLA.VertexArray(buffers, elements)
-    return RenderingManager(window, gla_program, vertex_array_obj)
+    return RenderingManager(gla_program, vertex_array_obj)
 end
 
 struct RenderSystem <: System
-    rendering_manager::RenderingManager
+    # rendering_manager::RenderingManager
 end
 
-function Overseer.update(sys::RenderSystem, l::AbstractLedger)
-    rm = sys.rendering_manager
+function Overseer.update(::RenderSystem, l::AbstractLedger)
+    for e in @entities_in(l, Window && RenderingManager)
+        glClear(GL_COLOR_BUFFER_BIT)
+        GLA.bind(e.gla_program)
 
-    glClear(GL_COLOR_BUFFER_BIT)
-    GLA.bind(rm.gla_program)
+        # put uniforms and buffers here
+        tex::Vector{Float32} = [1.0, 0.0, (cos(time()) + 1) / 2, 1.0]
+        u = GLA.uniform_location(e.gla_program, :tex)
+        if u != GLA.INVALID_UNIFORM
+            glUniform4f(u, tex...)
+        end
 
-    # put uniforms and buffers here
-    tex::Vector{Float32} = [1.0, 0.0, (cos(time()) + 1) / 2, 1.0]
-    u = GLA.uniform_location(rm.gla_program, :tex)
-    if u != GLA.INVALID_UNIFORM
-        glUniform4f(u, tex...)
+        test_buffer::Vector{Float32} = []
+        # test_buffer[2] = (sin(time()) + 1) / 2
+        # test_buffer[15] = (sin(time()) + 1) / 2
+        set_shader_storage_block(e.gla_program, "ObjectBuffer", test_buffer)
+
+        GLA.bind(e.vertex_array_obj)
+        GLA.draw(e.vertex_array_obj)
+        GLA.unbind(e.vertex_array_obj)
+        GLA.unbind(e.gla_program)
+        GLFW.SwapBuffers(e.window)
     end
-
-    test_buffer::Vector{Float32} = []
-    # test_buffer[2] = (sin(time()) + 1) / 2
-    # test_buffer[15] = (sin(time()) + 1) / 2
-    set_shader_storage_block(rm.gla_program, "ObjectBuffer", test_buffer)
-
-    GLA.bind(rm.vertex_array_obj)
-    GLA.draw(rm.vertex_array_obj)
-    GLA.unbind(rm.vertex_array_obj)
-    GLA.unbind(rm.gla_program)
-    GLFW.SwapBuffers(rm.window)
 end
 
-function should_exit(rendering_manager::RenderingManager)
-    return GLFW.WindowShouldClose(rendering_manager.window) || GLFW.GetKey(rendering_manager.window, GLFW.KEY_ESCAPE) == GLFW.PRESS
+function should_exit(window::GLFW.Window)
+    return GLFW.WindowShouldClose(window) || GLFW.GetKey(window, GLFW.KEY_ESCAPE) == GLFW.PRESS
 end
 
-function cleanup(rendering_manager::RenderingManager)
-    GLFW.SetWindowShouldClose(rendering_manager.window, true)
+function cleanup(window::GLFW.Window)
+    GLFW.SetWindowShouldClose(window, true)
 end

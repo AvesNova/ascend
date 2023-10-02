@@ -163,18 +163,12 @@ end
     axes::MVector
 end
 
-struct PlayerActions <: System
-    window::GLFW.Window
-end
+struct PlayerActions <: System end
 
-function PlayerActions(rendering_manager::RenderingManager)
-    return PlayerActions(rendering_manager.window)
-end
-
-function Overseer.update(sys::PlayerActions, l::AbstractLedger)
+function Overseer.update(::PlayerActions, l::AbstractLedger)
     GLFW.PollEvents()
-    for e in @entities_in(l, PlayerInputMap && Actions && PlayerActions)
-        e.buttons = get_actions(e.input_map, sys.window)
+    for e in @entities_in(l, PlayerInputMap && Actions && Window)
+        e.buttons = get_actions(e.input_map, e.window)
         process_axes!(e.axes, e.input_map)
         print("\r$(e.buttons) \t $(e.axes)")
     end

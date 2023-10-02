@@ -1,4 +1,4 @@
-include("../physics/physics.jl")
+# include("../physics/physics.jl")
 
 # abstract type Entity end
 
