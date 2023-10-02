@@ -49,3 +49,4 @@
 ⨽ \intprodr 
 ∨ \vee 
 ∧ \wedge 
+≀ \wr

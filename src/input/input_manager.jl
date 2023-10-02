@@ -170,6 +170,6 @@ function Overseer.update(::PlayerActions, l::AbstractLedger)
     for e in @entities_in(l, PlayerInputMap && Actions && Window)
         e.buttons = get_actions(e.input_map, e.window)
         process_axes!(e.axes, e.input_map)
-        print("\r$(e.buttons) \t $(e.axes)")
+        # print("\r$(e.buttons) \t $(e.axes)")
     end
 end

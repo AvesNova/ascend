@@ -58,6 +58,6 @@ end
 @define_clifford_algebra_helpers KleinMotor pga Motor 1 2 3 4 5 6 7 8
 @define_clifford_algebra_helpers KleinMotor pga Line 2 3 4 6 7 8
 @define_clifford_algebra_helpers KleinMotor pga Rotor 1 2 3 4
-@define_clifford_algebra_helpers KleinMotor pga Translator 5 6 7 8
+@define_clifford_algebra_helpers KleinMotor pga Translator 1 6 7 8
 
 # coefficients(pga_line(1, 2, 3, 4, 5, 6), PGA_LINE_INDICES_MVECTOR)
