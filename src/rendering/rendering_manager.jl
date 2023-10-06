@@ -5,7 +5,7 @@ include("uniforms.jl")
 
 function create_window()
     # Create the window. This sets all the hints and makes the context current.
-    window = GLFW.Window(name="Aves Ascention", resolution=(800,600))
+    window = GLFW.Window(name="Aves Ascention", resolution=(1280, 720))
     GLFW.MakeContextCurrent(window)
     GLA.set_context!(window)
     return window
@@ -70,15 +70,6 @@ function Overseer.update(::RenderSystem, l::AbstractLedger)
         glClear(GL_COLOR_BUFFER_BIT)
         GLA.bind(e.gla_program)
 
-        # put uniforms and buffers here
-        # tex::Vector{Float32} = [1.0, 0.0, (cos(time()) + 1) / 2, 1.0]
-        # u = GLA.uniform_location(e.gla_program, :tex)
-        # if u != GLA.INVALID_UNIFORM
-        #     glUniform4f(u, tex...)
-        # end
-
-        # test_buffer = ones(Float32, 16)
-        # test_buffer[14:16] = e.pose[6:8]
         set_shader_storage_block(e.gla_program, "ObjectBuffer", e.object_buffer)
 
         GLA.bind(e.vertex_array_obj)

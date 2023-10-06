@@ -124,7 +124,7 @@ function Δtwist!(
     Δtwist::MVector{6,T},
     twist::MVector{6,T},
     pose::MVector{8,T},
-    t::Real
+    t::Real,
 )::Nothing where {T<:Real}
     twist_line::MultiVector = pga_line(twist)
     Δtwist_line::MultiVector = dual(twist_line ×₋ dual(twist_line))
@@ -202,7 +202,7 @@ function kinetic_step!(
     forque::Function,
     axis_controls::MVector,
     button_controls::MVector,
-    Δt::Float64
+    Δt::Float64,
 )::Nothing where {T<:Real}
     pose_motor::MultiVector = pga_motor(pose)
     pose_motor /= norm(pose_motor)
@@ -221,7 +221,7 @@ end
 function kinematic_step!(
     twist::MVector{6,T},
     pose::MVector{8,T},
-    Δt::Float64
+    Δt::Float64,
 )::Nothing where {T<:Real}
     pose_motor::MultiVector = pga_motor(pose)
     pose_motor /= norm(pose_motor)

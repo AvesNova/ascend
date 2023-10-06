@@ -20,8 +20,14 @@ zero_axis_vector() = MVector{AxisCount,Float32}(zeros(AxisCount))
     BACKWARD
     LEFT
     RIGHT
-    TURNLEFT
-    TURNRIGHT
+    UP
+    DOWN
+    TURN_LEFT
+    TURN_RIGHT
+    TURN_DOWN
+    TURN_UP
+    TURN_ANTICLOCKWISE
+    TURN_CLOCKWISE
 end
 const ActionCount = length(instances(ActionEnums))
 zero_action_vector() = MVector{ActionCount,Int}(zeros(ActionCount))

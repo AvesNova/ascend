@@ -21,15 +21,15 @@ function Overseer.update(::CameraMover, l::AbstractLedger)
         # Calculate translation
         d_x::Float64 = e.buttons[RIGHT |> Int] - e.buttons[LEFT |> Int]
         d_y::Float64 = e.buttons[FORWARD |> Int] - e.buttons[BACKWARD |> Int]
-        d_z::Float64 = 0.0
+        d_z::Float64 = e.buttons[UP |> Int] - e.buttons[DOWN |> Int]
         
         translator_norm = max(norm([d_x, d_y, d_z]), 1.0)
-        translator = pga_translator(1000translator_norm, d_x, d_y, d_z)
+        translator = pga_translator(100translator_norm, d_x, d_y, d_z)
 
         # Calculate rotation
-        d_yz::Float64 = 0.0
-        d_zx::Float64 = 0.0
-        d_xy::Float64 = e.buttons[TURNRIGHT |> Int] - e.buttons[TURNLEFT |> Int]
+        d_yz::Float64 = e.buttons[TURN_UP |> Int] - e.buttons[TURN_DOWN |> Int]
+        d_zx::Float64 = e.buttons[TURN_CLOCKWISE |> Int] - e.buttons[TURN_ANTICLOCKWISE |> Int]
+        d_xy::Float64 = e.buttons[TURN_RIGHT |> Int] - e.buttons[TURN_RIGHT |> Int]
 
         rotor_norm = max(norm([d_yz, d_zx, d_xy]), 1.0)
         rotor = pga_rotor(100rotor_norm, d_yz, d_zx, d_xy)
@@ -39,15 +39,14 @@ function Overseer.update(::CameraMover, l::AbstractLedger)
         pga_pose /= norm(pga_pose)
 
         e.pose = coefficients(pga_pose, PGA_MOTOR_INDICES_MVECTOR)
-        # print("\r$(round.(e.pose; digits=4))")
+        print("\r$(round.(e.pose; digits=4))")
     end
 end
 
 struct Pose2Buffer <: System end
 
 function Overseer.update(::Pose2Buffer, l::AbstractLedger)
-    for e in @entities_in(l, Pose && ObjectBuffer)
-        print("\r$(round.(e.pose; digits=4))  $(round.(e.object_buffer; digits=4))")
-        e.object_buffer[14:16] = e.pose[6:8]
+    for (i, e) in enumerate(@entities_in(l, Pose && ObjectBuffer))
+        e.object_buffer[8(i-1)+1 : 8i] = e.pose
     end
 end

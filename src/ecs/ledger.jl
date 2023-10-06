@@ -32,7 +32,7 @@ function create_entities!(ledger::Ledger)
         PlayerInputMap(InputMap()), 
         Actions(zero_action_vector(), zero_axis_vector()),
         Camera(),
-        Pose([1,0,0,0,0,0,0,0]),
+        Pose([-1, 0, 0, 0, 0, 0, 0, -1]),
     )
     ledger[Window][camera] = renderer
     ledger[RenderingManager][camera] = renderer
