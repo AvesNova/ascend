@@ -136,14 +136,27 @@ vec4 get_ray_direction()
     return normalize(ray_direction);
 }
 
-vec4 calculate_normal(vec4 pnt, float h)
+vec4 get_normal(vec4 pnt, float h)
 {
-    vec3 p = pnt.yzw;
     return normalize(vec4(0.0,
-        sdf_scene(vec4(0.0, p.x + SURF_DIST, p.y, p.z)) - sdf_scene(vec4(0.0, p.x - SURF_DIST, p.y, p.z)),
-        sdf_scene(vec4(0.0, p.x, p.y + SURF_DIST, p.z)) - sdf_scene(vec4(0.0, p.x, p.y - SURF_DIST, p.z)),
-        sdf_scene(vec4(0.0, p.x, p.y, p.z + SURF_DIST)) - sdf_scene(vec4(0.0, p.x, p.y, p.z - SURF_DIST))
+        sdf_scene(vec4(0.0, pnt.y + SURF_DIST, pnt.z, pnt.w)) - sdf_scene(vec4(0.0, pnt.y - SURF_DIST, pnt.z, pnt.w)),
+        sdf_scene(vec4(0.0, pnt.y, pnt.z + SURF_DIST, pnt.w)) - sdf_scene(vec4(0.0, pnt.y, pnt.z - SURF_DIST, pnt.w)),
+        sdf_scene(vec4(0.0, pnt.y, pnt.z, pnt.w + SURF_DIST)) - sdf_scene(vec4(0.0, pnt.y, pnt.z, pnt.w - SURF_DIST))
     ));
+}
+
+vec4 get_lighting(vec4 pnt)
+{
+    vec4 light_position = vec4(1, 4, 5, 2);
+    vec4 light_direction = normalize(light_position - pnt);
+    vec4 normal = get_normal(pnt, 0.0001);
+
+    float dif = clamp(dot(normal, light_direction), 0., 1.);
+   vec2 dist_steps = ray_cast(pnt + normal * SURF_DIST * 2., light_direction);
+    if(dist_steps.x < length(light_position - pnt)) 
+        dif *= .1;
+    
+    return vec4(dif, dif, dif, 1.);
 }
 
 void main()
@@ -168,8 +181,9 @@ void main()
     else
     {
 	    vec4 ray_end = ray_origin + ray_direction * dist;
-        vec4 normal = calculate_normal(ray_end, 0.0001);
-        color = vec4(normal.yzw, 1.0);
+        // vec4 normal = get_normal(ray_end, 0.0001);
+        // color = vec4(normal.yzw, 1.0);
+        color = get_lighting(ray_end);
     }
     
     out_color = pow(color, vec4(.4545));	// gamma correction
