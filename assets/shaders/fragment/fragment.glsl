@@ -95,27 +95,32 @@ float sdf_box(vec4 pnt, kln_motor inv_pose, vec3 box_dim)
 vec2 window_res = vec2(1280, 720);
 float fov = 1;
 
-float calculate_distance(vec4 pnt)
+float sdf_scene(vec4 pnt)
 {
     vec4 sphere_center = vec4(1.0, 0.0, 0.0, 0.0);
     return sdf_sphere(pnt, sphere_center, 0.2);
+
+//     kln_motor cube_motor = kln_motor(vec4(1.0, 0.0, 0.0, 0.0), vec4(0.0, 0.0, 0.0, 0.0));
+//     vec3 cube_dimensions = vec3(1.0,1.5,0.5);
+//     float cube_dist = sdf_box(pnt, cube_motor, cube_dimensions);
+//     return cube_dist;
 }
 
-float ray_cast(vec4 ray_origin, vec4 ray_direction)
+vec2 ray_cast(vec4 ray_origin, vec4 ray_direction)
 {
     vec4 pnt = ray_origin;
-    float step_size = calculate_distance(pnt);
+    float step_size = sdf_scene(pnt);
     float total_distance = step_size;
 
     int stp= 0;
     for(; stp<MAX_STEPS && !(total_distance>MAX_DIST || step_size<SURF_DIST); stp++) 
     {
         pnt = ray_origin + ray_direction * total_distance;
-        step_size = calculate_distance(pnt);
+        step_size = sdf_scene(pnt);
         total_distance += step_size;
     }
 
-    return total_distance;
+    return vec2(total_distance, stp);
 }
 
 vec4 get_ray_origin()
@@ -131,12 +136,41 @@ vec4 get_ray_direction()
     return normalize(ray_direction);
 }
 
+vec4 calculate_normal(vec4 pnt, float h)
+{
+    vec3 p = pnt.yzw;
+    return normalize(vec4(0.0,
+        sdf_scene(vec4(0.0, p.x + SURF_DIST, p.y, p.z)) - sdf_scene(vec4(0.0, p.x - SURF_DIST, p.y, p.z)),
+        sdf_scene(vec4(0.0, p.x, p.y + SURF_DIST, p.z)) - sdf_scene(vec4(0.0, p.x, p.y - SURF_DIST, p.z)),
+        sdf_scene(vec4(0.0, p.x, p.y, p.z + SURF_DIST)) - sdf_scene(vec4(0.0, p.x, p.y, p.z - SURF_DIST))
+    ));
+}
+
 void main()
 {
     vec4 ray_origin = get_ray_origin();
     vec4 ray_direction = get_ray_direction();
 
-	float color = ray_cast(ray_origin, ray_direction) / 10;
+	vec2 dist_steps = ray_cast(ray_origin, ray_direction);
+    float dist = dist_steps[0];
+    float steps = dist_steps[1];
 
-    out_color = vec4(vec3(color), 1.0);
+    vec4 color = vec4(1., 0.4, 0.0, 1.0);
+
+    if (steps >= MAX_STEPS - 1)
+    {
+        color = vec4(0.0, 0.8, 1.0, 1.0);
+    }
+    else if (dist >= MAX_DIST - SURF_DIST)
+    {
+        color = vec4(0.8, 0.1, 0.5, 1.0);
+    }
+    else
+    {
+	    vec4 ray_end = ray_origin + ray_direction * dist;
+        vec4 normal = calculate_normal(ray_end, 0.0001);
+        color = vec4(normal.yzw, 1.0);
+    }
+    
+    out_color = pow(color, vec4(.4545));	// gamma correction
 }
