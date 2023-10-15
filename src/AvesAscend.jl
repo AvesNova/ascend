@@ -3,6 +3,11 @@ using Overseer
 
 include("ecs/ledger.jl")
 
+"""
+    main()
+
+Runs game
+"""
 function main()
     println("Initializing Game")
 
