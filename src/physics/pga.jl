@@ -1,3 +1,5 @@
+module PGA
+
 using CliffordAlgebras
 using StaticArrays
 
@@ -61,3 +63,5 @@ end
 @define_clifford_algebra_helpers KleinMotor pga Translator 1 6 7 8
 
 # coefficients(pga_line(1, 2, 3, 4, 5, 6), PGA_LINE_INDICES_MVECTOR)
+
+end

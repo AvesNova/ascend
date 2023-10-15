@@ -40,10 +40,9 @@ function Overseer.update(::CameraMover, l::AbstractLedger)
         pga_pose /= norm(pga_pose)
 
         e.pose = coefficients(pga_pose, PGA_MOTOR_INDICES_MVECTOR)
-        # print("\r$(round.(e.pose; digits=4))")
+
         formatted_pose = join(["$(@sprintf("% 7.4f", val))" for val in e.pose], " ")
         print("\r$formatted_pose")
-
     end
 end
 
