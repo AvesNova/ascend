@@ -203,10 +203,10 @@ function plot_airfoil_coefficients(;kwargs...)
     lift = coefficients[:,1]
     drag = coefficients[:,2]
     moment = coefficients[:,3]
-    # plot(AoA, coefficients)
-    Plots.plot(AoA, lift; label="C_Lift")
-    Plots.plot!(AoA, drag; label="C_Drag")
-    Plots.plot!(AoA, moment; label="C_Moment")
+    
+    plot(AoA, lift; label="C_Lift")
+    plot!(AoA, drag; label="C_Drag")
+    plot!(AoA, moment; label="C_Moment")
 end
 
 if abspath(PROGRAM_FILE) == abspath(@__FILE__)

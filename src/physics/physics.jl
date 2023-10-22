@@ -1,7 +1,9 @@
 using OrdinaryDiffEq
 using CliffordAlgebras
+import CliffordAlgebras: PGA_MOTOR_INDICES_MVECTOR, PGA_LINE_INDICES_MVECTOR
 using StaticArrays
 using Overseer
+
 
 
 """
@@ -61,7 +63,7 @@ Updates the `Δpose` vector based on the given `twist` and `pose`.
 function Δpose!(
     Δpose::MVector{8,T},
     twist::MVector{6,T},
-    pose::MVector{8,T}, 
+    pose::MVector{8,T},
     p, 
     t::T
 )::Nothing where {T<:Real}
@@ -73,23 +75,8 @@ function Δpose!(
     return nothing
 end
 
-"""
-    Δpose!(Δpose::Vector, twist::Vector, pose::Vector, t::Real)::Nothing
-
-Updates the `Δpose` vector based on the given `twist` and `pose`.
-"""
-function Δpose!(
-    Δpose::MVector{8,T},
-    twist::MVector{6,T},
-    pose::MVector{8,T}, 
-    t::T
-)::Nothing where {T<:Real}
-    twist_line::MultiVector = pga_line(twist)
-    pose_motor::MultiVector = pga_motor(pose)
-
-    Δpose_line::MultiVector = -0.5 * pose_motor * twist_line
-    Δpose .= coefficients(Δpose_line, PGA_MOTOR_INDICES_MVECTOR)
-    return nothing
+function Δpose(twist::MultiVector, pose::MultiVector)::MultiVector
+    return -0.5 * pose * twist
 end
 
 """
@@ -101,8 +88,8 @@ function Δtwist!(
     Δtwist::MVector{6,T},
     twist::MVector{6,T},
     pose::MVector{8,T},
-    p, 
-    t::Real
+    p,
+    t::T
 )::Nothing where {T<:Real}
     inertia::MultiVector = p.inertia
     twist_line::MultiVector = pga_line(twist)
@@ -115,21 +102,20 @@ function Δtwist!(
     return nothing
 end
 
-"""
-    Δtwist!(Δtwist::MVector, twist::MVector, pose::MVector, t::Real)::Nothing
+function Δtwist(
+    twist::MultiVector,
+    pose::MultiVector,
+    p, 
+    t::Real
+)::MultiVector
+    Itwist::MultiVector = inertia_map(twist, p.inertia)
+    momentum::MultiVector = twist ×₋ Itwist + p.forque(twist, pose, p.button_controls, p.axis_controls, t)
+    Δtwist::MultiVector = inv_inertia_map(momentum, p.inertia)
+    return Δtwist
+end
 
-Acceleration = dual(twist ×₋ dual(twist))
-"""
-function Δtwist!(
-    Δtwist::MVector{6,T},
-    twist::MVector{6,T},
-    pose::MVector{8,T},
-    t::Real,
-)::Nothing where {T<:Real}
-    twist_line::MultiVector = pga_line(twist)
-    Δtwist_line::MultiVector = dual(twist_line ×₋ dual(twist_line))
-    Δtwist .= coefficients(Δtwist_line, PGA_LINE_INDICES_MVECTOR)
-    return nothing
+function Δtwist_kinematic(twist::MultiVector)::MultiVector
+    return dual(twist ×₋ dual(twist))
 end
 
 """
@@ -148,18 +134,19 @@ Perform one step of the rigid body motion simulation without modifying the input
 - A tuple containing the resulting twist and pose vectors after the simulation step.
 """
 function kinetic_step(
-    twist::MVector{6,T},
-    pose::MVector{8,T},
-    inertia::MultiVector,
-    Δt::T;
-    forque::Function=((twist, pose, t) -> pga_line(0,0,0,0,0,0)),
+    twist::Union{Vector{T}, MVector{6,T}},
+    pose::Union{Vector{T}, MVector{8,T}};
+    inertia::MultiVector = pga_line(1,1,1,1,1,1),
+    forque::Function = (args...; kwargs...) -> pga_line(0,0,0,0,0,0),
+    axis_controls::Union{Vector, MVector} = MVector{0,Float64}(),
+    button_controls::Union{Vector, MVector} = MVector{0,Float64}(),
+    Δt::Float64 = 1.0,
 )::Tuple{MVector{6,T}, MVector{8,T}} where {T<:Real}
-
     pose_motor::MultiVector = pga_motor(pose)
     pose_motor /= norm(pose_motor)
     pose = coefficients(pose_motor, PGA_MOTOR_INDICES_MVECTOR)
 
-    p = (inertia=inertia, forque=forque)
+    p = (inertia=inertia, forque=forque, button_controls=button_controls, axis_controls=axis_controls)
     rbm_prob = DynamicalODEProblem(Δtwist!, Δpose!, twist, pose, (0.0, Δt), p)
     sol = solve(rbm_prob, Tsit5())
 
@@ -196,17 +183,17 @@ The function utilizes a differential equations solver (`DynamicalODEProblem` and
 updated values of twist and pose based on the provided inputs and time step.
 """
 function kinetic_step!(
-    twist::MVector{6,T},
-    pose::MVector{8,T},
-    inertia::MultiVector,
-    forque::Function,
-    axis_controls::MVector,
-    button_controls::MVector,
-    Δt::Float64,
+    twist::Union{Vector{T}, MVector{6,T}},
+    pose::Union{Vector{T}, MVector{8,T}};
+    inertia::MultiVector = pga_line(1,1,1,1,1,1),
+    forque::Function = (args...; kwargs...) -> pga_line(0,0,0,0,0,0),
+    axis_controls::Union{Vector, MVector} = MVector{0,Float64}(),
+    button_controls::Union{Vector, MVector} = MVector{0,Float64}(),
+    Δt::Float64 = 1.0,
 )::Nothing where {T<:Real}
     pose_motor::MultiVector = pga_motor(pose)
     pose_motor /= norm(pose_motor)
-    pose = coefficients(pose_motor, PGA_MOTOR_INDICES_MVECTOR)
+    pose .= coefficients(pose_motor, PGA_MOTOR_INDICES_MVECTOR)
 
     p = (inertia=inertia, forque=forque, button_controls=button_controls, axis_controls=axis_controls)
     rbm_prob = DynamicalODEProblem(Δtwist!, Δpose!, twist, pose, (0.0, Δt), p)
@@ -218,22 +205,53 @@ function kinetic_step!(
     return nothing
 end
 
-function kinematic_step!(
-    twist::MVector{6,T},
-    pose::MVector{8,T},
-    Δt::Float64,
-)::Nothing where {T<:Real}
-    pose_motor::MultiVector = pga_motor(pose)
-    pose_motor /= norm(pose_motor)
-    pose = coefficients(pose_motor, PGA_MOTOR_INDICES_MVECTOR)
+"""
+    euler_step(twist::MultiVector, pose::MultiVector, inertia::MultiVector, step_count::Int, dt::Real) -> Tuple{MultiVector, MultiVector}
 
-    rbm_prob = DynamicalODEProblem(Δtwist!, Δpose!, twist, pose, (0.0, Δt))
-    sol = solve(rbm_prob, Tsit5())
+Perform an Euler integration step on the pose and twist.
 
-    twist .= sol[end].x[1]
-    pose .= sol[end].x[2]
+# Arguments
 
-    return nothing
+- `twist::MultiVector`: A PGA Line representing the twist.
+- `pose::MultiVector`: A PGA Motor representing the current pose.
+- `inertia::MultiVector`: A PGA Line representing the inertia.
+- `step_count::Int`: Number of steps in the integration.
+- `dt::Real`: Time step size.
+
+# Returns
+
+- `Tuple{MultiVector, MultiVector}`: The updated twist and pose after performing the Euler integration.
+
+# Example
+
+'''julia-repl
+julia> twist = LinePGA(0.0, 0.0, 0.0, 0.1, 0.001, 0.0)
+julia> pose = MotorPGA(-1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 3.0, -2.0)
+julia> inertia = LinePGA(2, 1, 3, 1, 1, 1)
+julia> step_count = 1000
+julia> dt = 1.0
+julia> euler_step(twist, pose, inertia, step_count, dt)
+'''
+"""
+function euler_step(
+    twist::MultiVector,
+    pose::MultiVector;
+    step_count::Int64=1000000,
+    inertia::MultiVector = pga_line(1,1,1,1,1,1),
+    forque::Function = (args...; kwargs...) -> pga_line(0,0,0,0,0,0),
+    axis_controls::Union{Vector, MVector} = MVector{0,Float64}(),
+    button_controls::Union{Vector, MVector} = MVector{0,Float64}(),
+    Δt::Float64 = 1.0,
+)::Tuple{MultiVector, MultiVector}
+    p = (inertia=inertia, forque=forque, button_controls=button_controls, axis_controls=axis_controls)
+
+    for _ in 1:step_count
+        twist += Δtwist(twist, pose, p, Δt) * Δt / step_count
+        pose += Δpose(twist, pose) * Δt / step_count
+    end
+    pose /= norm(pose)
+
+    return twist, pose
 end
 
 @component mutable struct Pose
