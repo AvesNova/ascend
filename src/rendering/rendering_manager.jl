@@ -1,11 +1,11 @@
-using ModernGL, GLFW, GeometryTypes
+using ModernGL, GLFW, GeometryTypes, Overseer
 import GLAbstraction as GLA
 include("shader_manager.jl")
 include("uniforms.jl")
 
 function create_window()
     # Create the window. This sets all the hints and makes the context current.
-    window = GLFW.Window(name="Aves Ascention", resolution=(800,600))
+    window = GLFW.Window(name="Aves Ascention", resolution=(1280, 720))
     GLFW.MakeContextCurrent(window)
     GLA.set_context!(window)
     return window
@@ -31,48 +31,59 @@ function get_default_vertices()
     return vertex_positions, elements
 end
 
-struct RenderingManager
+@pooled_component struct Window
     window::GLFW.Window
+end
+
+function Window()
+    println("creating window")
+    window = create_window()
+    return Window(window)
+end
+
+@pooled_component struct RenderingManager
     gla_program::GLA.Program
     vertex_array_obj::GLA.VertexArray
 end
 
 function RenderingManager()
-    window = create_window()
+    println("creating rendering manager")
     gla_program = create_gla_program()
     vertex_positions, elements = get_default_vertices()
     buffers = GLA.generate_buffers(gla_program, GLA.GEOMETRY_DIVISOR; position = vertex_positions)
     vertex_array_obj = GLA.VertexArray(buffers, elements)
-    return RenderingManager(window, gla_program, vertex_array_obj)
+    return RenderingManager(gla_program, vertex_array_obj)
 end
 
-function render(rendering_manager::RenderingManager, game_state::GameState)
-    glClear(GL_COLOR_BUFFER_BIT)
-    GLA.bind(rendering_manager.gla_program)
+@pooled_component struct ObjectBuffer
+    object_buffer
+end
 
-    # put uniforms and buffers here
-    tex::Vector{Float32} = [1.0, 0.0, (cos(time()) + 1) / 2, 1.0]
-    u = GLA.uniform_location(rendering_manager.gla_program, :tex)
-    if u != GLA.INVALID_UNIFORM
-        glUniform4f(u, tex...)
+function ObjectBuffer()
+    return ObjectBuffer(ones(Float32, 16))
+end
+
+struct RenderSystem <: System end
+
+function Overseer.update(::RenderSystem, l::AbstractLedger)
+    for e in @entities_in(l, Window && RenderingManager && ObjectBuffer)
+        glClear(GL_COLOR_BUFFER_BIT)
+        GLA.bind(e.gla_program)
+
+        set_shader_storage_block(e.gla_program, "ObjectBuffer", e.object_buffer)
+
+        GLA.bind(e.vertex_array_obj)
+        GLA.draw(e.vertex_array_obj)
+        GLA.unbind(e.vertex_array_obj)
+        GLA.unbind(e.gla_program)
+        GLFW.SwapBuffers(e.window)
     end
-
-    test_buffer::Vector{Float32} = []
-    # test_buffer[2] = (sin(time()) + 1) / 2
-    # test_buffer[15] = (sin(time()) + 1) / 2
-    set_shader_storage_block(rendering_manager.gla_program, "ObjectBuffer", test_buffer)
-
-    GLA.bind(rendering_manager.vertex_array_obj)
-    GLA.draw(rendering_manager.vertex_array_obj)
-    GLA.unbind(rendering_manager.vertex_array_obj)
-    GLA.unbind(rendering_manager.gla_program)
-    GLFW.SwapBuffers(rendering_manager.window)
 end
 
-function should_exit(rendering_manager::RenderingManager)
-    return GLFW.WindowShouldClose(rendering_manager.window) || GLFW.GetKey(rendering_manager.window, GLFW.KEY_ESCAPE) == GLFW.PRESS
+function should_exit(window::GLFW.Window)
+    return GLFW.WindowShouldClose(window) || GLFW.GetKey(window, GLFW.KEY_ESCAPE) == GLFW.PRESS
 end
 
-function cleanup(rendering_manager::RenderingManager)
-    GLFW.SetWindowShouldClose(rendering_manager.window, true)
+function cleanup(window::GLFW.Window)
+    GLFW.SetWindowShouldClose(window, true)
 end

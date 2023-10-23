@@ -1,183 +1,67 @@
+module PGA
+
 using CliffordAlgebras
-import CliffordAlgebras: MultiVector, coefficients
-# import Base: .*, ./
-
-const PGA = CliffordAlgebra(:PGA3D)
-
-function MultiVector(
-    CA::Type{<:CliffordAlgebra},
-    BI::NTuple{K,Integer},
-    c::NTuple{K,T},
-) where {K,T<:Real}
-    @assert length(BI) > 0 
-    #@assert issorted(BI) && allunique(BI)
-    MultiVector{CA,T,convert(NTuple{K,Int}, BI),K}(c)
-end
-
-MultiVector(
-    ca::CliffordAlgebra, 
-    BI::NTuple{K,Integer}, 
-    c::NTuple{K,T}
-) where {K,T<:Real} = MultiVector(typeof(ca), BI, c)
-
-function MultiVectorPGA(s::Real, e1::Real, e2::Real, e3::Real, e0::Real, 
-    e12::Real, e13::Real, e23::Real, e10::Real, e02::Real, e30::Real, 
-    e132::Real, e120::Real, e103::Real, e230::Real, e1230::Real)::MultiVector
-    return MultiVector(
-        PGA,
-        (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
-        (s, e1, e2, e3, e0, e12, e13, e23, e10, e02, e30, e132, e120, e103, e230, e1230)
-    )
-end
-
-function MultiVectorPGA(vec::Vector)::MultiVector
-    return MultiVectorPGA(vec...)
-end
-
-function BiVectorPGA(e12, e13, e23, e10, e02, e30)::MultiVector
-    MultiVector(PGA, (6, 7, 8, 9, 10, 11), (e12, e13, e23, e10, e02, e30))
-end
-
-const MOTOR_PGA_INDICES_TUPLE = (1, 6, 7, 8, 9, 10, 11, 16)
-const MOTOR_PGA_INDICES_VECTOR = [1, 6, 7, 8, 9, 10, 11, 16]
-
-function MotorPGA(motor::NTuple{N,T})::MultiVector where {N,T<:Real}
-    @assert N == 8
-    return MultiVector(PGA, MOTOR_PGA_INDICES_TUPLE, motor)
-end
-
-function MotorPGA(motor::T...)::MultiVector where T<:Real
-    return MotorPGA(ntuple(i -> motor[i], 8))
-end
-
-function MotorPGA(motor::Vector{T})::MultiVector where T<:Real
-    return MotorPGA(NTuple{8, T}(motor))
-end
-
-function MotorPGA()::MultiVector
-    return MultiVector(PGA, 1.0)
-end
-
-const LINE_PGA_INDICES_TUPLE = (6, 7, 8, 9, 10, 11)
-const LINE_PGA_INDICES_VECTOR = [6, 7, 8, 9, 10, 11]
-
-function LinePGA(line::NTuple{N,T})::MultiVector where {N,T<:Real}
-    @assert N == 6
-    return MultiVector(PGA, LINE_PGA_INDICES_TUPLE, line)
-end
-
-function LinePGA(line::T...)::MultiVector where T<:Real
-    return LinePGA(ntuple(i -> line[i], length(line)))
-end
-
-function LinePGA(line::Vector{T})::MultiVector where T<:Real
-    return LinePGA(NTuple{6, T}(line))
-end
-
-function RotorPGA(rotor::NTuple{N,T})::MultiVector where {N,T<:Real}
-    @assert N == 5
-    return MultiVector(PGA, (1, 6, 7, 8, 9), rotor)
-end
-
-function RotorPGA(rotor::T...)::MultiVector where T<:Real
-    return RotorPGA(ntuple(i -> rotor[i], length(rotor)))
-end
-
-function RotorPGA(vec::Vector)::MultiVector
-    return RotorPGA(Tuple(vec))
-end
-
-function TranslatorPGA(translator::NTuple{N,T})::MultiVector where {N,T<:Real}
-    @assert N == 4
-    return MultiVector(PGA, (8, 9, 10, 11, 16), translator)
-end
-
-function TranslatorPGA(translator::T...)::MultiVector where T<:Real
-    return TranslatorPGA(ntuple(i -> translator[i], length(translator)))
-end
-
-function PointPGA(point::NTuple{N,T})::MultiVector where {N,T<:Real}
-    @assert N == 4
-    return MultiVector(PGA, (12, 13, 14, 15), point)
-end
-
-function PointPGA(point::T...)::MultiVector where T<:Real
-    return PointPGA(ntuple(i -> point[i], length(point)))
-end
-
-function PointPGA(x::T, y::T, z::T)::MultiVector where T<:Real
-    return PointPGA((x, y, z, 1))
-end
-
-function PlanePGA(plane::NTuple{N,T})::MultiVector where {N,T<:Real}
-    @assert N == 4
-    return MultiVector(PGA, (2, 3, 4, 5), plane)
-end
-
-function PlanePGA(plane::T...)::MultiVector where T<:Real
-    return PlanePGA(ntuple(i -> plane[i], length(plane)))
-end
-
-function Base.broadcasted(::typeof(*), mv1::MultiVector{CA,Ta,BI}, mv2::MultiVector{CA,Tb,BI})::MultiVector where {CA,Ta,Tb,BI}
-    return MultiVector(CA, BI, coefficients(mv1) .* coefficients(mv2))
-end
-
-function Base.broadcasted(::typeof(*), mv1::MultiVector{CA,Ta,BIa}, mv2::MultiVector{CA,Tb,BIb})::MultiVector where {CA,Ta,Tb,BIa,BIb}
-    v1, v2 = vector(mv1), vector(mv2)
-    l1, l2 = length(v1), length(v2)
-    @assert l1 == l2
-    return MultiVector(CA, (1:l1...,), Tuple(v1 .* v2))
-end
-
-function Base.broadcasted(::typeof(/), mv1::MultiVector{CA,Ta,BI}, mv2::MultiVector{CA,Tb,BI})::MultiVector where {CA,Ta,Tb,BI}
-    return MultiVector(CA, BI, coefficients(mv1) ./ coefficients(mv2))
-end
-
-function Base.broadcasted(::typeof(/), mv1::MultiVector{CA,Ta,BIa}, mv2::MultiVector{CA,Tb,BIb})::MultiVector where {CA,Ta,Tb,BIa,BIb}
-    v1, v2 = vector(mv1), vector(mv2)
-    l1, l2 = length(v1), length(v2)
-    @assert l1 == l2
-    return MultiVector(CA, (1:l1...,), Tuple(v1 ./ v2))
-end
-
-function normalize(mv::MultiVector)::MultiVector
-    return mv / norm(mv)
-end
-
-function Base.iterate(mv::MultiVector)
-    return iterate(vector(mv))
-end
-
-function Base.iterate(mv::MultiVector, state::Int)
-    return iterate(vector(mv), state)
-end
+using StaticArrays
 
 """
-    coefficient(::MultiVector, n::NTuple)
+    @define_clifford_algebra_helpers(algebra_symbol, algebra_name, type_symbol, indices...)
 
-Returns the multivector coefficients for the given basis vectors. Returns 0 if index is out of bounds.
+Macro to define helper functions and constants for Clifford algebras.
+
+This macro aids in generating constants and utility functions for specific
+Clifford algebra types, facilitating the process of working with various algebra elements.
+
+# Arguments
+- `algebra_symbol::Symbol`: Symbol to represent the algebra (e.g., `KleinMotor`).
+- `algebra_name::Symbol`: String form of the algebra's name (e.g., `pga`).
+- `type_symbol::Symbol`: Symbol for the specific type within the algebra (e.g., `Motor`, `Line`).
+- `indices...::Int...`: The indices defining the specific multivector type within the Clifford algebra.
+
+# Generated Entities
+For an invocation like `@define_clifford_algebra_helpers KleinMotor pga Motor 1 2 3 4`:
+- Constants for indices in different formats (tuple, vector, mvector).
+- A function to create a `MultiVector` from an `NTuple`.
+- A function to create a `MultiVector` from varargs.
+- A function to create a `MultiVector` from an `AbstractVector`.
 """
-function coefficients(mv::MultiVector{CA,T}, idxs::Union{NTuple, Vector})::Union{NTuple, Vector} where {CA,T}
-    # Precompute base indices for efficiency
-    bases = baseindices(mv)
-    coeffs = getfield(mv, :c)
+macro define_clifford_algebra_helpers(algebra_symbol, algebra_name, type_symbol, indices...)
+    indices_length = length(indices)
 
-    # Use map to avoid unnecessary allocations
-    return map(idxs) do idx
-        n = findfirst(isequal(idx), bases)
-        isnothing(n) ? zero(T) : coeffs[n]
+    type_str = string(type_symbol)
+    TYPE_UPPER = uppercase(type_str)
+    type_lower = lowercase(type_str)
+
+    algebra_str = string(algebra_name)
+    ALGEBRA_UPPER = uppercase(algebra_str) * "_"
+    algebra_lower = lowercase(algebra_str) * "_"
+
+    algebra = CliffordAlgebra(algebra_symbol) |> typeof
+
+    @eval begin
+        const $(Symbol(ALGEBRA_UPPER * TYPE_UPPER * "_INDICES_TUPLE")) = $indices
+        const $(Symbol(ALGEBRA_UPPER * TYPE_UPPER * "_INDICES_VECTOR")) = $[indices...]
+        const $(Symbol(ALGEBRA_UPPER * TYPE_UPPER * "_INDICES_MVECTOR")) = $MVector{$indices_length,Int}($indices)
+
+        function $(Symbol(algebra_lower * type_lower))(ntuple::NTuple{N,T})::MultiVector where {N,T<:Real}
+            @assert N == $indices_length
+            return MultiVector($algebra, $(Symbol(ALGEBRA_UPPER * TYPE_UPPER * "_INDICES_TUPLE")), ntuple)
+        end
+
+        function $(Symbol(algebra_lower * type_lower))(args::T...)::MultiVector where {T<:Real}
+            MultiVector($algebra, $(Symbol(ALGEBRA_UPPER * TYPE_UPPER * "_INDICES_TUPLE")), ntuple(i -> args[i], $indices_length))
+        end
+
+        function $(Symbol(algebra_lower * type_lower))(vec::AbstractVector{T})::MultiVector where {T<:Real}
+            return MultiVector($algebra, $(Symbol(ALGEBRA_UPPER * TYPE_UPPER * "_INDICES_TUPLE")), NTuple{$indices_length, T}(vec))
+        end
     end
 end
 
+@define_clifford_algebra_helpers KleinMotor pga Motor 1 2 3 4 5 6 7 8
+@define_clifford_algebra_helpers KleinMotor pga Line 2 3 4 6 7 8
+@define_clifford_algebra_helpers KleinMotor pga Rotor 1 2 3 4
+@define_clifford_algebra_helpers KleinMotor pga Translator 1 6 7 8
 
-# ll = LinePGA(randn(6))
-# rr = RotorPGA(randn(5))
-# mm = MultiVectorPGA(randn(16))
+# coefficients(pga_line(1, 2, 3, 4, 5, 6), PGA_LINE_INDICES_MVECTOR)
 
-# coefficients(ll, (3, 4, 5, 6, 7, 8))
-# coefficients(ll, [3, 4, 5, 6, 7, 8])
-
-# mm .* mm
-# ll .* rr
-
-# MultiVector(PGA, (1:16...,), Tuple(randn(16)))
+end

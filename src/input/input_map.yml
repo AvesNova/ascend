@@ -1,10 +1,16 @@
 keyboard:
-  KEY_W: forward
-  KEY_S: backward
-  KEY_A: left
-  KEY_D: right
-  KEY_Q: turn_left
-  KEY_E: turn_right
+  KEY_W: FORWARD
+  KEY_S: BACKWARD
+  KEY_A: LEFT
+  KEY_D: RIGHT
+  KEY_T: UP
+  KEY_G: DOWN
+  KEY_Q: TURN_LEFT
+  KEY_E: TURN_RIGHT
+  KEY_R: TURN_DOWN
+  KEY_F: TURN_UP
+  KEY_Z: TURN_ANTICLOCKWISE
+  KEY_X: TURN_CLOCKWISE
 
 mouse:
   button:
@@ -12,17 +18,17 @@ mouse:
 joystick:
   "CH PRO THROTTLE USB":
     button:
-      1: forward
+      1: FORWARD
     axis:
-      3: throttle_axis
+      3: THROTTLE
 
   "Saitek Pro Flight Rudder Pedals":
     button:
     axis:
-      3: yaw_axis
+      3: YAW
 
   " VKB-Sim Gladiator NXT R  ":
     button:
     axis:
-      1: roll_axis
-      2: pitch_axis
+      1: ROLL
+      2: PITCH
