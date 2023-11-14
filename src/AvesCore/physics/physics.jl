@@ -303,7 +303,7 @@ end
 struct KineticMover2D <: System end
 function Overseer.update(::KineticMover2D, l::AbstractLedger, Δt::Float64)
     for e in @entities_in(l, Twist2D && Pose2D && Kinetics2D && AxisControls && ButtonControls)
-        kinetic_step!(e.twist, e.pose, e.inertia, e.forque, e.axes, e.buttons, Δt)
+        kinetic_step!(e.twist, e.pose; inertia=e.inertia, forque=e.forque, axis_controls=e.axes, button_controls=e.buttons, Δt=Δt)
     end
 end
 
@@ -323,6 +323,6 @@ end
 struct KineticMover3D <: System end
 function Overseer.update(::KineticMover3D, l::AbstractLedger, Δt::Float64)
     for e in @entities_in(l, Twist3D && Pose3D && Kinetics3D && AxisControls && ButtonControls)
-        kinetic_step!(e.twist, e.pose, e.inertia, e.forque, e.axes, e.buttons, Δt)  # Use 3D physics function
+        kinetic_step!(e.twist, e.pose; inertia=e.inertia, forque=e.forque, axis_controls=e.axes, button_controls=e.buttons, Δt=Δt)
     end
 end
