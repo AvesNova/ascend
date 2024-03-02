@@ -76,6 +76,12 @@ kln_motor camera_pose = objects[0].pose;
 //==================================================================
 //-------------- PRIMATIVE SIGNED DISTANCE FUNCTIONS ---------------
 
+//---------------------------- PLANE -------------------------------
+float sdf_plane(vec4 pnt, vec4 normal, float height)
+{
+    return dot(pnt, normal) + height;
+}
+
 //---------------------------- SPHERE ------------------------------
 float sdf_sphere(vec4 pnt, vec4 sphere_center, float radius)
 {
@@ -97,8 +103,13 @@ float fov = 1;
 
 float sdf_scene(vec4 pnt)
 {
-    vec4 sphere_center = vec4(1.0, 0.0, 0.0, 0.0);
-    return sdf_sphere(pnt, sphere_center, 0.2);
+    vec4 plane_normal = vec4(1.0, 0.0, 0.0, 0.0);
+    vec4 sphere_center = vec4(1.0, 1.0, 1.0, 6.0);
+    return min(
+        sdf_sphere(pnt, sphere_center, 1.0),
+        pnt.z
+        // sdf_plane(pnt, plane_normal, 1.0)
+    );
 
 //     kln_motor cube_motor = kln_motor(vec4(1.0, 0.0, 0.0, 0.0), vec4(0.0, 0.0, 0.0, 0.0));
 //     vec3 cube_dimensions = vec3(1.0,1.5,0.5);

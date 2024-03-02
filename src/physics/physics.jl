@@ -1,6 +1,6 @@
 using OrdinaryDiffEq
 using CliffordAlgebras
-import CliffordAlgebras: PGA_MOTOR_INDICES_MVECTOR, PGA_LINE_INDICES_MVECTOR
+import CliffordAlgebras: PGA_MOTOR_INDICES_MVECTOR, PGA_LINE_INDICES_MVECTOR, PGA_K_MOTOR_INDICES_MVECTOR, PGA_K_LINE_INDICES_MVECTOR
 using StaticArrays
 using Overseer
 
