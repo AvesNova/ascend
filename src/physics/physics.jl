@@ -95,7 +95,7 @@ function Δtwist!(
     twist_line::MultiVector = pga_line(twist)
 
     Itwist::MultiVector = inertia_map(twist_line, inertia)
-    momentum::MultiVector = twist_line ×₋ Itwist + p.forque(twist, pose, p.button_controls, p.axis_controls, t)
+    momentum::MultiVector = twist_line ×₋ Itwist + p.forque(twist, pose, p.inputs, t)
     Δtwist_line::MultiVector = inv_inertia_map(momentum, inertia)
 
     Δtwist .= coefficients(Δtwist_line, PGA_LINE_INDICES_MVECTOR)
@@ -109,7 +109,7 @@ function Δtwist(
     t::Real
 )::MultiVector
     Itwist::MultiVector = inertia_map(twist, p.inertia)
-    momentum::MultiVector = twist ×₋ Itwist + p.forque(twist, pose, p.button_controls, p.axis_controls, t)
+    momentum::MultiVector = twist ×₋ Itwist + p.forque(twist, pose, p.inputs, t)
     Δtwist::MultiVector = inv_inertia_map(momentum, p.inertia)
     return Δtwist
 end
@@ -138,19 +138,18 @@ function kinetic_step(
     pose::Union{Vector{T}, MVector{8,T}};
     inertia::MultiVector = pga_line(1,1,1,1,1,1),
     forque::Function = (args...; kwargs...) -> pga_line(0,0,0,0,0,0),
-    axis_controls::Union{Vector, MVector} = MVector{0,Float64}(),
-    button_controls::Union{Vector, MVector} = MVector{0,Float64}(),
+    inputs::Any = nothing,
     Δt::Float64 = 1.0,
 )::Tuple{MVector{6,T}, MVector{8,T}} where {T<:Real}
     pose_motor::MultiVector = pga_motor(pose)
     pose_motor /= norm(pose_motor)
     pose = coefficients(pose_motor, PGA_MOTOR_INDICES_MVECTOR)
 
-    p = (inertia=inertia, forque=forque, button_controls=button_controls, axis_controls=axis_controls)
+    p = (inertia=inertia, forque=forque, inputs=inputs)
     rbm_prob = DynamicalODEProblem(Δtwist!, Δpose!, twist, pose, (0.0, Δt), p)
     sol = solve(rbm_prob, Tsit5())
 
-    return sol[end].x[1], sol[end].x[2]
+    return sol.u[end].x[1], sol.u[end].x[2]
 end
 
 """
@@ -187,20 +186,19 @@ function kinetic_step!(
     pose::Union{Vector{T}, MVector{8,T}};
     inertia::MultiVector = pga_line(1,1,1,1,1,1),
     forque::Function = (args...; kwargs...) -> pga_line(0,0,0,0,0,0),
-    axis_controls::Union{Vector, MVector} = MVector{0,Float64}(),
-    button_controls::Union{Vector, MVector} = MVector{0,Float64}(),
+    inputs::Any = nothing,
     Δt::Float64 = 1.0,
 )::Nothing where {T<:Real}
     pose_motor::MultiVector = pga_motor(pose)
     pose_motor /= norm(pose_motor)
     pose .= coefficients(pose_motor, PGA_MOTOR_INDICES_MVECTOR)
 
-    p = (inertia=inertia, forque=forque, button_controls=button_controls, axis_controls=axis_controls)
+    p = (inertia=inertia, forque=forque, inputs=inputs)
     rbm_prob = DynamicalODEProblem(Δtwist!, Δpose!, twist, pose, (0.0, Δt), p)
     sol = solve(rbm_prob, Tsit5())
 
-    twist .= sol[end].x[1]
-    pose .= sol[end].x[2]
+    twist .= sol.u[end].x[1]
+    pose .= sol.u[end].x[2]
 
     return nothing
 end
@@ -239,11 +237,10 @@ function euler_step(
     step_count::Int64=1000000,
     inertia::MultiVector = pga_line(1,1,1,1,1,1),
     forque::Function = (args...; kwargs...) -> pga_line(0,0,0,0,0,0),
-    axis_controls::Union{Vector, MVector} = MVector{0,Float64}(),
-    button_controls::Union{Vector, MVector} = MVector{0,Float64}(),
+    inputs::Any = nothing,
     Δt::Float64 = 1.0,
 )::Tuple{MultiVector, MultiVector}
-    p = (inertia=inertia, forque=forque, button_controls=button_controls, axis_controls=axis_controls)
+    p = (inertia=inertia, forque=forque, inputs=inputs)
 
     for _ in 1:step_count
         twist += Δtwist(twist, pose, p, Δt) * Δt / step_count
@@ -265,18 +262,19 @@ end
 @component mutable struct Kinetics
     inertia::MultiVector
     forque::Function
+    inputs::Any
 end
 
-struct KinematicMover <: System end
-function Overseer.update(::KinematicMover, l::AbstractLedger, Δt::Float64)
-    for e in @entities_in(l, Twist && Pose)
-        kinematic_step!(e.twist, e.pose, Δt)
-    end
-end
+# struct KinematicMover <: System end
+# function Overseer.update(::KinematicMover, l::AbstractLedger, Δt::Float64)
+#     for e in @entities_in(l, Twist && Pose)
+#         kinematic_step!(e.twist, e.pose, Δt)
+#     end
+# end
 
 struct KineticMover <: System end
 function Overseer.update(::KineticMover, l::AbstractLedger, Δt::Float64)
-    for e in @entities_in(l, Twist && Pose && Kinetics && AxisControls && ButtonControls)
-        kinetic_step!(e.twist, e.pose, e.inertia, e.forque, e.axes, e.buttons, Δt)
+    for e in @entities_in(l, Twist && Pose && Kinetics)
+        kinetic_step!(e.twist, e.pose; e.inertia, e.forque, e.inputs, Δt)
     end
 end
