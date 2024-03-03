@@ -7,6 +7,7 @@ function create_ledger()::Ledger
         RenderSystem(), 
         PlayerActions(),
         CameraMover(),
+        KineticMover(),
         Pose2Buffer(),
     ]))
     return ledger
@@ -19,23 +20,25 @@ function create_entities!(ledger::Ledger)
         RenderingManager(),
         ObjectBuffer(),
     )
-    
-    # player_1 = Entity(
-    #     ledger, 
-    #     PlayerInputMap(InputMap()), 
-    #     Actions(zero_action_vector(), zero_axis_vector()),
-    # )
-    # ledger[Window][player_1] = renderer
 
     camera = Entity(
         ledger,
         PlayerInputMap(InputMap()), 
         Actions(zero_action_vector(), zero_axis_vector()),
         Camera(),
-        Pose([-1.0, 0.1, 0.25, 0.0, 0.0, -1.0, 1.0, 1.0]),
+        Pose([-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, -2.0]),
     )
+
+    box = Entity(
+        ledger,
+        Pose([-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+        Twist([0.10, 0.01, 0.0, 0.0, 0.0, 0.0]),
+        Kinetics(pga_k_line(2.0, 0.1, 3.0, 1.0, 1.0, 1.0)),
+    )
+    
     ledger[Window][camera] = renderer
     ledger[RenderingManager][camera] = renderer
     ledger[ObjectBuffer][camera] = renderer
+    ledger[ObjectBuffer][box] = renderer
 
 end

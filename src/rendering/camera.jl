@@ -41,8 +41,8 @@ function Overseer.update(::CameraMover, l::AbstractLedger)
 
         e.pose = coefficients(pga_pose, PGA_K_MOTOR_INDICES_MVECTOR)
 
-        formatted_pose = join(["$(@sprintf("% 7.4f", val))" for val in e.pose], " ")
-        print("\r$formatted_pose")
+        # formatted_pose = join(["$(@sprintf("% 7.4f", val))" for val in e.pose], " ")
+        # print("\r$formatted_pose")
     end
 end
 
@@ -53,3 +53,4 @@ function Overseer.update(::Pose2Buffer, l::AbstractLedger)
         e.object_buffer[8(i-1)+1 : 8i] = e.pose
     end
 end
+

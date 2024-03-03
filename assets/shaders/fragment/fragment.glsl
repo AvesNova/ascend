@@ -72,6 +72,7 @@ layout (std140) buffer ObjectBuffer {
 };
 
 kln_motor camera_pose = objects[0].pose;
+kln_motor box_pose = objects[1].pose;
 
 //==================================================================
 //-------------- PRIMATIVE SIGNED DISTANCE FUNCTIONS ---------------
@@ -104,10 +105,12 @@ float fov = 1;
 float sdf_scene(vec4 pnt)
 {
     vec4 plane_normal = vec4(1.0, 0.0, 0.0, 0.0);
-    vec4 sphere_center = vec4(1.0, 1.0, 1.0, 6.0);
+    vec4 sphere_center = vec4(1.0, 0.0, 0.0, 0.5);
     return min(
-        sdf_sphere(pnt, sphere_center, 1.0),
-        pnt.z
+        // sdf_sphere(pnt, sphere_center, 1.0),,
+        100,
+        sdf_box(pnt, box_pose, vec3(0.2, 0.1, 0.3))
+        // pnt.z
         // sdf_plane(pnt, plane_normal, 1.0)
     );
 
