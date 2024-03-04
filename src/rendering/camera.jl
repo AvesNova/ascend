@@ -50,7 +50,13 @@ struct Pose2Buffer <: System end
 
 function Overseer.update(::Pose2Buffer, l::AbstractLedger)
     for (i, e) in enumerate(@entities_in(l, Pose && ObjectBuffer))
-        e.object_buffer[8(i-1)+1 : 8i] = e.pose
+        if i == 1
+            e.object_buffer[8(i-1)+1 : 8i] = e.pose
+        else
+            e.object_buffer[8(i-1)+1 : 8i] = e.pose
+            e.object_buffer[8(i-1)+2 : 8(i-1)+4] *= -1
+            e.object_buffer[8(i-1)+6 : 8(i-1)+8] *= -1
+        end
     end
 end
 

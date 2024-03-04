@@ -95,7 +95,7 @@ function Δtwist!(
     twist_line::MultiVector = pga_k_line(twist)
 
     Itwist::MultiVector = inertia_map(twist_line, inertia)
-    momentum::MultiVector = twist_line ×₋ Itwist + p.forque(twist, pose, p.inputs, t)
+    momentum::MultiVector = 0.5 * (twist_line ×₋ Itwist) + p.forque(twist, pose, p.inputs, t)
     Δtwist_line::MultiVector = inv_inertia_map(momentum, inertia)
 
     Δtwist .= coefficients(Δtwist_line, PGA_K_LINE_INDICES_MVECTOR)
@@ -285,7 +285,7 @@ struct KineticMover <: System end
 function Overseer.update(::KineticMover, l::AbstractLedger)
     for e in @entities_in(l, Twist && Pose && Kinetics)
         kinetic_step!(e.twist, e.pose; e.inertia, e.forque, e.inputs, Δt=1.0)
-        formatted_pose = join(["$(@sprintf("% 7.4f", val))" for val in e.pose], " ")
-        print("\r$formatted_pose")
+        # formatted_pose = join(["$(@sprintf("% 7.4f", val))" for val in e.pose], " ")
+        # print("\r$formatted_pose")
     end
 end
