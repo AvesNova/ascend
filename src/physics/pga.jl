@@ -1,5 +1,3 @@
-module PGAs
-
 using StaticArrays, CliffordAlgebras
 
 export pga_2d, pga_3d, pga_klein
@@ -100,4 +98,3 @@ const pga_2d = PGA(
         :multivector => (1, 2, 3, 4, 5, 6, 7, 8),
     )
 )
-end

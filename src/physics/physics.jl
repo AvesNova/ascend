@@ -3,11 +3,6 @@ using CliffordAlgebras
 using StaticArrays
 using Overseer
 
-include("pga.jl")
-using .PGA
-if ! @isdefined(pga)
-    pga = pga_klein
-end
 
 """
     inertia_map(twist::MultiVector, inertia::MultiVector) -> MultiVector
@@ -101,7 +96,7 @@ function Δtwist!(
     momentum::MultiVector = 0.5 * (twist_line ×₋ Itwist) + p.forque(twist, pose, p.inputs, t)
     Δtwist_line::MultiVector = inv_inertia_map(momentum, inertia)
 
-    Δtwist .= coefficients(Δtwist_line, PGA_LINE_INDICES_MVECTOR)
+    Δtwist .= coefficients(Δtwist_line, pga.line.indices_mvector)
     return nothing
 end
 

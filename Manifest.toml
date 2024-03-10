@@ -212,8 +212,8 @@ weakdeps = ["SparseArrays"]
     ChainRulesCoreSparseArraysExt = "SparseArrays"
 
 [[deps.CliffordAlgebras]]
-deps = ["Combinatorics", "LinearAlgebra", "PrettyTables", "SparseArrays", "StaticArrays", "Unitful"]
-git-tree-sha1 = "f2d7769c00f76b63d23cec5e34a301c6533450ea"
+deps = ["Combinatorics", "LinearAlgebra", "PrettyTables", "SparseArrays", "StaticArrays"]
+git-tree-sha1 = "d93819d5484f7fdf60834e6c41cc3cf16226e03f"
 repo-rev = "klein"
 repo-url = "https://github.com/Vizia128/CliffordAlgebras.jl"
 uuid = "ca841f6f-225c-4bbd-a467-7a3512dfa6f6"

@@ -1,6 +1,74 @@
 using Test
-include("../src/physics/pga/pga_3d.jl")
+
+include("../src/physics/pga.jl")
 include("../src/physics/physics.jl")
+pga = pga_3d
+
+
+
+# twists = [
+#     pga.line.new(0.0, 0.0, 0.0, 0.1, 0.001, 0.0),
+#     pga.line.new(0.1, 0.2, 0.3, 0.1, 0.2, 0.3),
+#     pga.line.new(1.0, 1.0, 1.0, 1.0, 1.0, 1.0),
+#     pga.line.new(0.5, -0.5, 0.5, -0.5, 0.5, -0.5)
+# ]
+
+# inertias = [
+#     pga.line.new(2, 1, 3, 1, 1, 1),
+#     pga.line.new(1, 2, 1, 2, 1, 2),
+#     pga.line.new(0.5, 0.5, 0.5, 0.5, 0.5, 0.5),
+#     pga.line.new(3, 2, 1, 3, 2, 1)
+# ]
+
+# for (twist, inertia) in zip(twists, inertias)
+#     # Map twist to momentum using inertia_map
+#     momentum = inertia_map(twist, inertia)
+
+#     # Map momentum back to twist using inv_inertia_map
+#     twist_back = inv_inertia_map(momentum, inertia)
+
+#     # Adding test conditions
+#     @test norm(vector(twist - twist_back)) < 1e-15
+# end
+
+
+
+Δt = 100.0
+inertia_0 = pga.line.new(2, 1, 3, 1, 1, 1)
+
+twist_0 = pga.line.new(0.0, 0.0, 0.0, 0.1, 0.001, 0.0)
+pose_0 = pga.motor.new(-1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 3.0, -2.0)
+
+twist_1, pose_1 = euler_step(twist_0, pose_0; step_count=1000000, inertia=inertia_0, Δt=Δt)
+twist_e = coefficients(twist_1) |> collect
+pose_e = coefficients(pose_1) |> collect
+
+twist_T::MVector{6,Float64} = [0.0, 0.0, 0.0, 0.1, 0.001, 0.0]
+pose_T::MVector{8,Float64} = [-1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 3.0, -2.0]
+inertia_T::MVector{6,Float64} = [2, 1, 3, 1, 1, 1]
+kinetic_step!(twist_T, pose_T; inertia=inertia_0, Δt=Δt)
+
+@show twist_e twist_T pose_e pose_T
+
+@test norm(twist_e - twist_T) < 1e-4
+@test norm(pose_e - pose_T) < 1e-4
+
+
+
+
+
+
+twist_0 = twist_t = MVector{6,Float64}([0.0, 0.0, 0.0, 0.1, 0.001, 0.0])
+pose_0 = pose_t = MVector{8,Float64}([-1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 3.0, -2.0])
+
+kinetic_step!(twist_t, pose_t; inertia=inertia_0, Δt=Δt)
+@show twist_0 twist_t pose_0 pose_t
+
+
+@test norm(collect(coefficients(pga.line.new(twist_t))) - collect(coefficients(pga.line.new(twist_0)))) < 1e-4
+@test norm(collect(coefficients(pga.motor.new(pose_t))) - collect(coefficients(pga.motor.new(pose_0)))) < 1e-4
+
+
 
 
 @testset "Physics Tests" begin
