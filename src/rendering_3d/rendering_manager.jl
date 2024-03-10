@@ -63,9 +63,9 @@ function ObjectBuffer()
     return ObjectBuffer(ones(Float32, 16))
 end
 
-struct RenderSystem <: System end
+struct RenderSystem3D <: System end
 
-function Overseer.update(::RenderSystem, l::AbstractLedger)
+function Overseer.update(::RenderSystem3D, l::AbstractLedger)
     for e in @entities_in(l, Window && RenderingManager && ObjectBuffer)
         glClear(GL_COLOR_BUFFER_BIT)
         GLA.bind(e.gla_program)

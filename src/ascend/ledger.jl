@@ -32,8 +32,8 @@ function create_entities!(ledger::Ledger)
     box = Entity(
         ledger,
         Pose([-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.0]),
-        Twist([0.10, 0.00, 0.01, 0.0, 0.0, 0.0]),
-        Kinetics(pga_k_line(1.0, 1.0, 1.0, 2.0, 1.0, 3.0)),
+        Twist([0.20, 0.00, 0.01, 0.0, 0.0, 0.0]),
+        Kinetics(pga.line.new(1.0, 1.0, 1.0, 2.0, 1.0, 3.0)),
     )
     
     ledger[Window][camera] = renderer

@@ -1,67 +1,103 @@
-module PGA
+module PGAs
 
-using CliffordAlgebras
-using StaticArrays
+using StaticArrays, CliffordAlgebras
 
-"""
-    @define_clifford_algebra_helpers(algebra_symbol, algebra_name, type_symbol, indices...)
+export pga_2d, pga_3d, pga_klein
 
-Macro to define helper functions and constants for Clifford algebras.
-
-This macro aids in generating constants and utility functions for specific
-Clifford algebra types, facilitating the process of working with various algebra elements.
-
-# Arguments
-- `algebra_symbol::Symbol`: Symbol to represent the algebra (e.g., `KleinMotor`).
-- `algebra_name::Symbol`: String form of the algebra's name (e.g., `pga`).
-- `type_symbol::Symbol`: Symbol for the specific type within the algebra (e.g., `Motor`, `Line`).
-- `indices...::Int...`: The indices defining the specific multivector type within the Clifford algebra.
-
-# Generated Entities
-For an invocation like `@define_clifford_algebra_helpers KleinMotor pga Motor 1 2 3 4`:
-- Constants for indices in different formats (tuple, vector, mvector).
-- A function to create a `MultiVector` from an `NTuple`.
-- A function to create a `MultiVector` from varargs.
-- A function to create a `MultiVector` from an `AbstractVector`.
-"""
-macro define_clifford_algebra_helpers(algebra_symbol, algebra_name, type_symbol, indices...)
-    indices_length = length(indices)
-
-    type_str = string(type_symbol)
-    TYPE_UPPER = uppercase(type_str)
-    type_lower = lowercase(type_str)
-
-    algebra_str = string(algebra_name)
-    ALGEBRA_UPPER = uppercase(algebra_str) * "_"
-    algebra_lower = lowercase(algebra_str) * "_"
-
-    algebra = CliffordAlgebra(algebra_symbol) |> typeof
-
-    @eval begin
-        const $(Symbol(ALGEBRA_UPPER * TYPE_UPPER * "_INDICES_TUPLE")) = $indices
-        const $(Symbol(ALGEBRA_UPPER * TYPE_UPPER * "_INDICES_VECTOR")) = $[indices...]
-        const $(Symbol(ALGEBRA_UPPER * TYPE_UPPER * "_INDICES_MVECTOR")) = $MVector{$indices_length,Int}($indices)
-
-        function $(Symbol(algebra_lower * type_lower))(ntuple::NTuple{N,T})::MultiVector where {N,T<:Real}
-            @assert N == $indices_length
-            return MultiVector($algebra, $(Symbol(ALGEBRA_UPPER * TYPE_UPPER * "_INDICES_TUPLE")), ntuple)
-        end
-
-        function $(Symbol(algebra_lower * type_lower))(args::T...)::MultiVector where {T<:Real}
-            MultiVector($algebra, $(Symbol(ALGEBRA_UPPER * TYPE_UPPER * "_INDICES_TUPLE")), ntuple(i -> args[i], $indices_length))
-        end
-
-        function $(Symbol(algebra_lower * type_lower))(vec::AbstractVector{T})::MultiVector where {T<:Real}
-            return MultiVector($algebra, $(Symbol(ALGEBRA_UPPER * TYPE_UPPER * "_INDICES_TUPLE")), NTuple{$indices_length, T}(vec))
-        end
-    end
+struct PGASub
+    indices_tuple::NTuple
+    indices_vector::Vector
+    indices_mvector::MVector
+    new::Function
 end
 
-@define_clifford_algebra_helpers KleinMotor pga Motor 1 2 3 4 5 6 7 8
-@define_clifford_algebra_helpers KleinMotor pga Line 2 3 4 6 7 8
-@define_clifford_algebra_helpers KleinMotor pga Rotor 1 2 3 4
-@define_clifford_algebra_helpers KleinMotor pga Translator 1 6 7 8
+function PGASub(algebra_symbol::Symbol, indices_tuple::NTuple)
+    algebra = CliffordAlgebra(algebra_symbol) |> typeof
+    indices_length = length(indices_tuple)
 
-# coefficients(pga_line(1, 2, 3, 4, 5, 6), PGA_LINE_INDICES_MVECTOR)
+    indices_vector = collect(indices_tuple)
+    indices_mvector = MVector{indices_length,Int}(indices_tuple)
 
+    function new(ntuple::NTuple{N,T})::MultiVector where {N,T<:Real}
+        @assert N == indices_length
+        return MultiVector(algebra, indices_tuple, ntuple)
+    end
+
+    function new(args::T...)::MultiVector where {T<:Real}
+        return MultiVector(algebra, indices_tuple, ntuple(i -> args[i], indices_length))
+    end
+
+    function new(vec::AbstractVector{T})::MultiVector where {T<:Real}
+        return MultiVector(algebra, indices_tuple, NTuple{indices_length, T}(vec))
+    end
+
+    return PGASub(indices_tuple, indices_vector, indices_mvector, new)
+end
+
+@kwdef struct PGA
+    motor::PGASub
+    line::PGASub
+    rotor::PGASub
+    translator::PGASub
+    point::PGASub
+    direction::PGASub
+    # plane::PGASub
+    sudoscalar::PGASub
+    multivector::PGASub
+end
+
+function PGA(algebra::Symbol, indices_dict)
+    sub_algebras = Dict()
+    for (sub_alg, indices) in indices_dict
+        @assert sub_alg in (:motor, :line, :rotor, :translator, :point, :direction, :plane, :sudoscalar, :multivector)
+        sub_algebras[sub_alg] = PGASub(algebra, indices)
+    end
+
+    return PGA(;sub_algebras...)
+
+end
+
+const pga_3d = PGA(
+    :PGA3D,
+    Dict(
+        :motor => (1, 6, 7, 8, 9, 10, 11, 16),
+        :line => (6, 7, 8, 9, 10, 11),
+        :rotor => (1, 6, 7, 8),
+        :translator => (1, 9, 10, 11),
+        :point => (2, 3, 4, 5),
+        :direction => (2, 3, 4),
+        # :plane => (12, 13, 14, 15),
+        :sudoscalar => (16,),
+        :multivector => (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
+    )
+)
+
+const pga_klein = PGA(
+    :Klein,
+    Dict(
+        :motor => (5, 6, 7, 8, 9, 10, 11, 12),
+        :line => (6, 7, 8, 10, 11, 12),
+        :rotor => (5, 6, 7, 8),
+        :translator => (5, 10, 11, 12),
+        :point => (1, 2, 3, 4),
+        :direction => (2, 3, 4),
+        # :plane => (13, 14, 15, 16),
+        :sudoscalar => (9,),
+        :multivector => (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
+    )
+)
+
+const pga_2d = PGA(
+    :PGA2D,
+    Dict(
+        :motor => (1, 5, 6, 7),
+        :line => (2, 3, 4),
+        :rotor => (1, 5),
+        :translator => (1, 6, 7),
+        :point => (5, 6, 7),
+        :direction => (6, 7),
+        :sudoscalar => (8,),
+        :multivector => (1, 2, 3, 4, 5, 6, 7, 8),
+    )
+)
 end

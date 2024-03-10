@@ -1,10 +1,13 @@
 using OrdinaryDiffEq
 using CliffordAlgebras
-import CliffordAlgebras: PGA_K_MOTOR_INDICES_MVECTOR, PGA_K_LINE_INDICES_MVECTOR, PGA_K_MOTOR_INDICES_MVECTOR, PGA_K_LINE_INDICES_MVECTOR
 using StaticArrays
 using Overseer
 
-
+include("pga.jl")
+using .PGA
+if ! @isdefined(pga)
+    pga = pga_klein
+end
 
 """
     inertia_map(twist::MultiVector, inertia::MultiVector) -> MultiVector
@@ -20,8 +23,8 @@ Compute the momentum of a given twist and inertia.
 
 # Example
 '''julia
-twist = pga_k_line(0.0, 0.0, 0.0, 0.1, 0.001, 0.0)
-inertia = pga_k_line(2, 1, 3, 1, 1, 1)
+twist = pga.line.new(0.0, 0.0, 0.0, 0.1, 0.001, 0.0)
+inertia = pga.line.new(2, 1, 3, 1, 1, 1)
 inertia_map(twist, inertia)
 '''
 """
@@ -46,8 +49,8 @@ Calculate the twist of a given momentum and moment of inertia.
 # Example
 
 '''julia
-julia> momentum = pga_k_line(0.0, 0.001, 0.3, 0.0, 0.0, 0.0)
-julia> inertia = pga_k_line(2, 1, 3, 1, 1, 1)
+julia> momentum = pga.line.new(0.0, 0.001, 0.3, 0.0, 0.0, 0.0)
+julia> inertia = pga.line.new(2, 1, 3, 1, 1, 1)
 julia> inv_inertia_map(momentum, inertia)
 '''
 """
@@ -61,17 +64,17 @@ end
 Updates the `Δpose` vector based on the given `twist` and `pose`.
 """
 function Δpose!(
-    Δpose::MVector{8,T},
-    twist::MVector{6,T},
-    pose::MVector{8,T},
+    Δpose::AbstractVector{<:Real},
+    twist::AbstractVector{<:Real},
+    pose::AbstractVector{<:Real},
     p, 
-    t::T
-)::Nothing where {T<:Real}
-    twist_line::MultiVector = pga_k_line(twist)
-    pose_motor::MultiVector = pga_k_motor(pose)
+    t::Real
+)::Nothing
+    twist_line::MultiVector = pga.line.new(twist)
+    pose_motor::MultiVector = pga.motor.new(pose)
 
     Δpose_line::MultiVector = -0.5 * pose_motor * twist_line
-    Δpose .= coefficients(Δpose_line, PGA_K_MOTOR_INDICES_MVECTOR)
+    Δpose .= coefficients(Δpose_line, pga.motor.indices_mvector)
     return nothing
 end
 
@@ -85,20 +88,20 @@ end
 Acceleration = I⁻¹[Twist ×₋ I[Twist] + Forque]
 """
 function Δtwist!(
-    Δtwist::MVector{6,T},
-    twist::MVector{6,T},
-    pose::MVector{8,T},
+    Δtwist::AbstractVector{<:Real},
+    twist::AbstractVector{<:Real},
+    pose::AbstractVector{<:Real},
     p,
-    t::T
-)::Nothing where {T<:Real}
+    t::Real
+)::Nothing
     inertia::MultiVector = p.inertia
-    twist_line::MultiVector = pga_k_line(twist)
+    twist_line::MultiVector = pga.line.new(twist)
 
     Itwist::MultiVector = inertia_map(twist_line, inertia)
     momentum::MultiVector = 0.5 * (twist_line ×₋ Itwist) + p.forque(twist, pose, p.inputs, t)
     Δtwist_line::MultiVector = inv_inertia_map(momentum, inertia)
 
-    Δtwist .= coefficients(Δtwist_line, PGA_K_LINE_INDICES_MVECTOR)
+    Δtwist .= coefficients(Δtwist_line, PGA_LINE_INDICES_MVECTOR)
     return nothing
 end
 
@@ -134,16 +137,16 @@ Perform one step of the rigid body motion simulation without modifying the input
 - A tuple containing the resulting twist and pose vectors after the simulation step.
 """
 function kinetic_step(
-    twist::Union{Vector{T}, MVector{6,T}},
-    pose::Union{Vector{T}, MVector{8,T}};
-    inertia::MultiVector = pga_k_line(1,1,1,1,1,1),
-    forque::Function = (args...; kwargs...) -> pga_k_line(0,0,0,0,0,0),
+    twist::AbstractVector{<:Real},
+    pose::AbstractVector{<:Real};
+    inertia::MultiVector = pga.line.new(1,1,1,1,1,1),
+    forque::Function = (args...; kwargs...) -> pga.line.new(0,0,0,0,0,0),
     inputs::Any = nothing,
     Δt::Float64 = 1.0,
-)::Tuple{MVector{6,T}, MVector{8,T}} where {T<:Real}
-    pose_motor::MultiVector = pga_k_motor(pose)
+)::Tuple{AbstractVector{<:Real}, AbstractVector{<:Real}}
+    pose_motor::MultiVector = pga.motor.new(pose)
     pose_motor /= norm(pose_motor)
-    pose = coefficients(pose_motor, PGA_K_MOTOR_INDICES_MVECTOR)
+    pose = coefficients(pose_motor, pga.motor.indices_mvector)
 
     p = (inertia=inertia, forque=forque, inputs=inputs)
     rbm_prob = DynamicalODEProblem(Δtwist!, Δpose!, twist, pose, (0.0, Δt), p)
@@ -182,16 +185,16 @@ The function utilizes a differential equations solver (`DynamicalODEProblem` and
 updated values of twist and pose based on the provided inputs and time step.
 """
 function kinetic_step!(
-    twist::Union{Vector{T}, MVector{6,T}},
-    pose::Union{Vector{T}, MVector{8,T}};
-    inertia::MultiVector = pga_k_line(1,1,1,1,1,1),
-    forque::Function = (args...; kwargs...) -> pga_k_line(0,0,0,0,0,0),
+    twist::AbstractVector{<:Real},
+    pose::AbstractVector{<:Real};
+    inertia::MultiVector = pga.line.new(1,1,1,1,1,1),
+    forque::Function = (args...; kwargs...) -> pga.line.new(0,0,0,0,0,0),
     inputs::Any = nothing,
     Δt::Float64 = 1.0,
-)::Nothing where {T<:Real}
-    pose_motor::MultiVector = pga_k_motor(pose)
+)::Nothing
+    pose_motor::MultiVector = pga.motor.new(pose)
     pose_motor /= norm(pose_motor)
-    pose .= coefficients(pose_motor, PGA_K_MOTOR_INDICES_MVECTOR)
+    pose .= coefficients(pose_motor, pga.motor.indices_mvector)
 
     p = (inertia=inertia, forque=forque, inputs=inputs)
     rbm_prob = DynamicalODEProblem(Δtwist!, Δpose!, twist, pose, (0.0, Δt), p)
@@ -234,11 +237,11 @@ julia> euler_step(twist, pose, inertia, step_count, dt)
 function euler_step(
     twist::MultiVector,
     pose::MultiVector;
-    step_count::Int64=1000000,
-    inertia::MultiVector = pga_k_line(1,1,1,1,1,1),
-    forque::Function = (args...; kwargs...) -> pga_k_line(0,0,0,0,0,0),
+    step_count::Int = 1000000,
+    inertia::MultiVector = pga.line.new(1,1,1,1,1,1),
+    forque::Function = (args...; kwargs...) -> pga.line.new(0,0,0,0,0,0),
     inputs::Any = nothing,
-    Δt::Float64 = 1.0,
+    Δt::Real = 1.0,
 )::Tuple{MultiVector, MultiVector}
     p = (inertia=inertia, forque=forque, inputs=inputs)
 
@@ -252,11 +255,11 @@ function euler_step(
 end
 
 @component mutable struct Pose
-    pose::MVector{8, Float64}
+    pose::AbstractVector{<:Real}
 end
 
 @component mutable struct Twist
-    twist::MVector{6, Float64}
+    twist::AbstractVector{<:Real}
 end
 
 @component mutable struct Kinetics
@@ -268,7 +271,7 @@ end
 function Kinetics(intertia::MultiVector)
     return Kinetics(
         intertia,
-        (args...; kwargs...) -> pga_k_line(0,0,0,0,0,0),
+        (args...; kwargs...) -> pga.line.new(0,0,0,0,0,0),
         nothing,
     )
 end

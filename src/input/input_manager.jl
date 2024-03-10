@@ -1,6 +1,6 @@
 using GLFW, YAML, Overseer, StaticArrays, DataStructures
 
-include("../rendering/rendering_manager.jl")
+include("../rendering_3d/rendering_manager.jl")
 
 const MAX_JOYSTICKS = 15
 
