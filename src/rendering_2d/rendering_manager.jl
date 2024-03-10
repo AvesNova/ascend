@@ -1,8 +1,20 @@
-using GLWMakie, Makie, Overseer
+using WGLMakie, Makie, Overseer
 
-function create_window()
-    window = Figure()
-    return window
+
+@pooled_component struct Window2D
+    window::Figure
 end
 
-@pooled_component struct Window
+function Window2D()
+    println("creating window")
+    window = Figure()
+    return Window2D(window)
+end
+
+struct RenderSystem2D <: System end
+
+function Overseer.update(::RenderSystem2D, l::AbstractLedger)
+    for e in @entities_in(l, Window2D)
+        e.window
+    end
+end
