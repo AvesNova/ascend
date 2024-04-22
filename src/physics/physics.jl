@@ -17,11 +17,11 @@ Compute the momentum of a given twist and inertia.
 - `MultiVector`: A PGA Line indicating the momentum.
 
 # Example
-'''julia
+```julia
 twist = pga.line.new(0.0, 0.0, 0.0, 0.1, 0.001, 0.0)
 inertia = pga.line.new(2, 1, 3, 1, 1, 1)
 inertia_map(twist, inertia)
-'''
+```
 """
 function inertia_map(twist::MultiVector, inertia::MultiVector)::MultiVector
     return dual(twist) .* inertia
@@ -43,11 +43,11 @@ Calculate the twist of a given momentum and moment of inertia.
 
 # Example
 
-'''julia
+```julia
 julia> momentum = pga.line.new(0.0, 0.001, 0.3, 0.0, 0.0, 0.0)
 julia> inertia = pga.line.new(2, 1, 3, 1, 1, 1)
 julia> inv_inertia_map(momentum, inertia)
-'''
+```
 """
 function inv_inertia_map(momentum::MultiVector, inertia::MultiVector)::MultiVector
     return dual(momentum ./ inertia)
@@ -220,14 +220,14 @@ Perform an Euler integration step on the pose and twist.
 
 # Example
 
-'''julia-repl
+```julia-repl
 julia> twist = LinePGA(0.0, 0.0, 0.0, 0.1, 0.001, 0.0)
 julia> pose = MotorPGA(-1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 3.0, -2.0)
 julia> inertia = LinePGA(2, 1, 3, 1, 1, 1)
 julia> step_count = 1000
 julia> dt = 1.0
 julia> euler_step(twist, pose, inertia, step_count, dt)
-'''
+```
 """
 function euler_step(
     twist::MultiVector,
